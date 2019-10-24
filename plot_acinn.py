@@ -2,17 +2,16 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
-from bokeh.plotting import figure, show
-from bokeh.models import ColumnDataSource, LinearAxis, Range1d, Band
+from bokeh.plotting import figure
+from bokeh.models import LinearAxis, Range1d, WheelZoomTool
 from bokeh.models import HoverTool, DatetimeTickFormatter, DateFormatter
 from bokeh.tile_providers import get_provider, Vendors
-from scipy.spatial.distance import cdist
-from bokeh.events import Tap
 #from bokeh.models.renderers import GlyphRenderer
 #from bokeh.models.widgets import DataTable, TableColumn, Slider, Dropdown
-from bokeh.layouts import layout, column, row, widgetbox
+from bokeh.layouts import layout, column, row, widgetbox, gridplot
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs
+from bokeh.models.widgets import DateRangeSlider
 
 
 def get_width():
@@ -47,49 +46,100 @@ def read_data(url):
         df[df[column] == -99.9] = np.nan
     return df
 
-
+def set_font_sizes_axis(p):
+    p.xaxis.axis_label_text_font_size = font_size_label
+    p.yaxis.axis_label_text_font_size = font_size_label
+    p.xaxis.major_label_text_font_size = font_size_ticker
+    p.yaxis.major_label_text_font_size = font_size_ticker
+    p.yaxis.major_label_text_font_size = font_size_ticker
+    p.xaxis.formatter=DatetimeTickFormatter(
+            hours=['%H:%M'],
+            days=["%b %d %Y"],)
+    p.toolbar.active_scroll = p.select_one(WheelZoomTool)
+    return p
 
 ##### Plot 1
 def upper_plot(df):
-    p1_tools = 'box_zoom,pan,save,hover,reset,wheel_zoom'
-    p1 = figure(x_axis_type="datetime", tools=p1_tools);
-    h_line = p1.line(x='time', y='tl', source=df, line_width=1.5, color='red');
-    p1.y_range=Range1d(df['tp'].min()-2, df['tl'].max()+2)
-    p1.line(x='time', y='tp', source=df, line_width=1.5, color='green')
-    p1.extra_y_ranges = {'ssd': Range1d(start=0, end=10)}
-    p1.add_layout(LinearAxis(y_range_name='ssd'), 'right')
-    p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color='yellow', 
-            line_alpha=0, line_width=0, fill_alpha=0.4, y_range_name='ssd')
-    
+    p1_tools = 'box_zoom, pan, save, hover, reset, xwheel_zoom' # zoom bounds auto?
+    p1 = figure(width = fwidth, height = fhgt, x_axis_type="datetime", 
+                tools=p1_tools, 
+                x_range=(pd.to_datetime(df.index[-1])-timedelta(days=1), pd.to_datetime(df.index[-1])));
+                
+    p1 = set_font_sizes_axis(p1)
     hover_p1 = p1.select(dict(type=HoverTool))
-    
     hover_p1.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"), 
-                         ('Air temperature', '@tl'), 
-                         ('Dewpoint', '@tp'), 
-                         ('Sunshine duration', '@so')]#
+                         ('Temperature', "@tl{f0.00} °C")]#
+    # sunshine duration
+    if 'so' in df.columns:
+        p1.extra_y_ranges = {'ssd': Range1d(start=0, end=10)}
+        p1.add_layout(LinearAxis(y_range_name='ssd'), 'right')
+        p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color='yellow', 
+                line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name='ssd', legend = 'Sunshine duration')
+        p1.yaxis[1].axis_label = 'Sunshine duration (min)'
+        p1.yaxis[1].axis_label_text_font_size = font_size_label
+        p1.yaxis[1].major_label_text_font_size = font_size_ticker
+        hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
+    
+    # temperature
+    h_line = p1.line(x='time', y='tl', source=df, line_width=4, color='red', legend='Temperature');
+    p1.yaxis[0].axis_label = 'Temperature (°C)'
+    
+    # dew point
+    if 'tp' in df.columns:
+        p1.y_range=Range1d(df['tp'].min()-2, df['tl'].max()+2)
+        p1.line(x='time', y='tp', source=df, line_width=4, color='green', legend = 'Dewpoint')
+        hover_p1[0].tooltips.append(('Dewpoint', '@tp{f0.00} °C'))
+    else:
+        # relative humidity
+        p1.y_range=Range1d(0, 100)
+        p1.line(x='time', y='rf', source=df, line_width=4, color='green', legend = 'relative humidity')
+        hover_p1[0].tooltips.append(('relative humidity', '@rf{f0.00} %'))
+    
+    # hover
     hover_p1.formatters = { "time": "datetime"}
     hover_p1.mode = 'vline'
     hover_p1.renderers =[h_line] #### to fix if missing value
+    
+    # legend
+    p1.legend.location = "top_left"
+    p1.legend.click_policy="hide"
+    p1.legend.label_text_font_size = font_size_legend
     return p1
 
 
 ##### Plot 2
-def lower_plot(df):
-    p2_tools = 'box_zoom,pan,save,hover,reset,wheel_zoom'
-    p2 = figure(x_axis_type="datetime", tools=p2_tools);
+def lower_plot(df, p1):
+    p2_tools = 'box_zoom,pan,save,hover,reset,xwheel_zoom'
+    p2 = figure(width = fwidth, height = fhgt,x_axis_type="datetime", 
+                tools=p2_tools, x_range=p1.x_range);
     
+    p2 = set_font_sizes_axis(p2)
     
-    h_line = p2.line(x='time', y='p', source=df, line_width=1.5, color='black')
+    # pressure
+    h_line = p2.line(x='time', y='p', source=df, line_width=4, color='blue', legend = 'Pressure')
     p2.y_range=Range1d(df['p'].min()-10, df['p'].max()+10)
-    #p2.extra_y_ranges = {'winddir': Range1d(start=0, end=360)}
+    p2.yaxis.axis_label = 'Pressure (hPa)'
+    
+    # wind
     p2.extra_y_ranges = {"winddir": Range1d(start=0, end=360), 
                          "windspd": Range1d(start=0, end=df['ff'].max()+df['ff'].max()*0.1)}
+    
     p2.add_layout(LinearAxis(y_range_name='winddir'), 'right')
     p2.add_layout(LinearAxis(y_range_name="windspd"), 'right')
-    p2.line(x='time', y='dd', source=df, line_width=1.5, color='blue', y_range_name='winddir')
-    p2.line(x='time', y='ff', source=df, line_width=1.5, color='red', y_range_name='windspd')
-    hover_p2 = p2.select(dict(type=HoverTool))
+    p2.circle(x='time', y='dd', source=df, line_width=4, color='black', y_range_name='winddir', legend = 'Wind Direction')
+    p2.line(x='time', y='ff', source=df, line_width=2, color='red', y_range_name='windspd', legend = 'Wind speed')
+   
     
+    p2.yaxis[0].axis_label = 'Pressure (hPa)'
+    p2.yaxis[1].axis_label = 'Wind direction (deg)'
+    p2.yaxis[2].axis_label = 'Wind speed (ms⁻¹)'
+    p2.yaxis[1].axis_label_text_font_size = font_size_label
+    p2.yaxis[1].major_label_text_font_size = font_size_ticker
+    p2.yaxis[2].axis_label_text_font_size = font_size_label
+    p2.yaxis[2].major_label_text_font_size = font_size_ticker
+    
+    # hover
+    hover_p2 = p2.select(dict(type=HoverTool))
     hover_p2.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"), 
                          ('Pressure', '@p'), 
                          ('Winddirection', '@dd'),
@@ -97,6 +147,13 @@ def lower_plot(df):
     hover_p2.formatters = { "time": "datetime"}
     hover_p2.mode = 'vline'
     hover_p2.renderers =[h_line] #### to fix if missing value
+    
+    # legend
+    p2.legend.location = "top_left"
+    p2.legend.click_policy="hide"
+    p2.legend.label_text_font_size = font_size_legend
+    
+    p2.yaxis[2].major_label_text_color = ffcol
     return p2
 
 
@@ -104,12 +161,20 @@ def lower_plot(df):
 #### Setting Up 
 output_file("acinn_weather_plot.html")
 base_url = 'http://meteo145.uibk.ac.at/'
-time = str(3)
-
+time = str(7)
+fwidth = 900
+fhgt = 400
+font_size_label = "20pt"
+font_size_ticker = "15pt"
+font_size_legend = "12pt"
+ffcol = 'red'
+ddcol = 'black'
+pcol = 'blue'
+#447.167300, 11.457867
 # If station selection changes, change this dataframe
-stations = pd.DataFrame({'lat':[47.263631,47.011203], 
-                         'lon':[11.385571,11.480401]}, 
-                         index=['innsbruck', 'obergurgl']) # todo more & correct coordinates obergurgl=sattelberg
+stations = pd.DataFrame({'lat':[47.263631, 47.011203, 46.867521, 47.167300], 
+                         'lon':[11.385571, 11.480401, 11.024800, 11.457867]}, 
+                         index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # todo correct coordinates
 
 # filling url column
 stations['url'] = '' 
@@ -144,10 +209,10 @@ tab = []
 for station in stations.index:
     df = read_data(stations['url'].loc[stations.index == station]) 
     p1[station] = upper_plot(df)
-    p2[station] = lower_plot(df)
+    p2[station] = lower_plot(df, p1[station])
     tab.append(Panel(child=column(p1[station], p2[station]), title=station.capitalize()))
 
 
 #### Layout and save
-doc_layout = layout(children=[map_plot, Tabs(tabs=[ tab[0], tab[1] ])])
+doc_layout = layout(children=[map_plot, Tabs(tabs=tab)])
 save(doc_layout)
