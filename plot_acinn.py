@@ -42,8 +42,13 @@ def read_data(url):
     df['time'] = [datetime(1970, 1, 1) + timedelta(milliseconds=ds) for ds in df['datumsec']]
     df = df.set_index('time')
     df = df.drop(columns='datumsec')
+    # kick out missing values
     for column in df.columns:
         df[df[column] == -99.9] = np.nan
+    # calculate cumulative rainsum
+    if 'rr' in df.columns:
+        rrcumday = df.groupby(pd.Grouper(freq='D'))
+        df['rrcum'] = rrcumday['rr'].cumsum()
     return df
 
 def set_font_sizes_axis(p):
@@ -94,6 +99,14 @@ def upper_plot(df):
         p1.y_range=Range1d(0, 100)
         p1.line(x='time', y='rf', source=df, line_width=4, color='green', legend = 'relative humidity')
         hover_p1[0].tooltips.append(('relative humidity', '@rf{f0.00} %'))
+    
+    # precipitation (daily accumulated)
+    if 'rrcum' in df.columns:
+        p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=100)
+        p1.add_layout(LinearAxis(y_range_name='rrcum'), 'right')
+        p1.line(x='time', y='rrcum', source=df, line_width=4, color=pcol, y_range_name='rrcum', legend = 'Precipitation')
+        hover_p1[0].tooltips.append(('Cumulated rainsum', '@rrcum{f0.00} mm'))
+    
     
     # hover
     hover_p1.formatters = { "time": "datetime"}
