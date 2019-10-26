@@ -243,6 +243,30 @@ stations = pd.DataFrame({'lat':[47.263631, 47.011203, 46.867521, 47.167300],
                          },
                          index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # todo correct coordinates
 
+#### template for Tab formatting
+template = """
+{% block postamble %}
+<style>
+.bk-root .bk-tab {
+    background-color: white;
+    width: 200px;
+    color: black;
+    font-style: italic;
+}
+.bk-root .bk-tabs-header .bk-tab.bk-active{
+    background-color: white;
+    color: black;
+    font-style: normal;
+    font-weight: bold;
+}
+.bk-root .bk-tabs-header .bk-tab:hover{
+    background-color: white
+}
+</style>
+{% endblock %}
+"""
+
+
 # filling url column
 stations['url'] = ''
 for station in stations.index:
@@ -294,4 +318,4 @@ for station in stations.index:
 
 #### Layout and save
 doc_layout = layout(children=[map_plot, Tabs(tabs=tab)])
-save(doc_layout)
+save(doc_layout, template = template)
