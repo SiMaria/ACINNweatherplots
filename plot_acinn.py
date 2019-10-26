@@ -102,11 +102,21 @@ def upper_plot(df):
     
     # precipitation (daily accumulated)
     if 'rrcum' in df.columns:
-        p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=100)
+        p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=(df['rrcum'].max() + df['rrcum'].max()*0.1))
         p1.add_layout(LinearAxis(y_range_name='rrcum'), 'right')
         p1.line(x='time', y='rrcum', source=df, line_width=4, color=pcol, y_range_name='rrcum', legend = 'Precipitation')
         hover_p1[0].tooltips.append(('Cumulated rainsum', '@rrcum{f0.00} mm'))
-    
+        p1.yaxis[2].axis_label_text_font_size = font_size_label
+        p1.yaxis[2].major_label_text_font_size = font_size_ticker
+        p1.yaxis[2].major_label_text_color = pcol
+        # plot rainrate but hide it by default
+        rr = p1.vbar(top='rr', x='time', source=df, width=get_width(), 
+                     fill_color='blue', line_alpha=0, 
+                     line_width=0, fill_alpha=0.5, 
+                     legend = 'Rain rate',  y_range_name='rrcum')
+        rr.visible = False
+        if df['rrcum'].sum() > 0:       
+                p1.yaxis[2].axis_label = 'Precipitation (mm)'
     
     # hover
     hover_p1.formatters = { "time": "datetime"}
