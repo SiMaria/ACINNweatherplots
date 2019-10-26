@@ -1,21 +1,21 @@
 Todo:
 
 MAP:
-* add station height
-* correct coordinates (by now only approximately) 
+x add station height (done)
+* correct coordinates (by now only approximately)  - also for height
 * if somehow possible: connected to shown location
   (either by clicking on map show location, or by choosing the tab -> highlight the location
 * Map could also show up only in an additional tab
 
 Data plots:
-* Accumulated precipitation - might be overlapping with sunshine
+x Accumulated precipitation - might be overlapping with sunshine (hidden by default but clickabe in legend)
 * annotate daily min/max temperature, precipitation sum
-* Hover: would be nice to link upper and lower panel
+* Hover: would be nice to link upper and lower panel (not possible without javascript callbacks)
 * zoom & pan: do not allow to zoom/pan out of data range
 
 General:
-* Axis (Font size, description, color...)
+x Axis (Font size, description, color...) (done)
 
 Table (or sth similar):
-* current values
-* ev. some basic statistics
+x current values (done)
+x ev. some basic statistics (done)
