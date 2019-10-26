@@ -47,6 +47,7 @@ def read_data(url):
         df[df[column] == -99.9] = np.nan
     # calculate cumulative rainsum
     if 'rr' in df.columns:
+        df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
         rrcumday = df.groupby(pd.Grouper(freq='D'))
         df['rrcum'] = rrcumday['rr'].cumsum()
     return df
@@ -83,6 +84,7 @@ def upper_plot(df):
         p1.yaxis[1].axis_label = 'Sunshine duration (min)'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
         p1.yaxis[1].major_label_text_font_size = font_size_ticker
+        p1.yaxis[1].major_label_text_color = socol
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
     
     # temperature
@@ -108,22 +110,23 @@ def upper_plot(df):
     
     # precipitation (daily accumulated)
     if 'rrcum' in df.columns:
-        p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=(df['rrcum'].max() + df['rrcum'].max()*0.1))
+        if df['rrcum'].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=(df['rrcum'].max() + df['rrcum'].max()*0.1))
+        else: 
+            p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=10)
         p1.add_layout(LinearAxis(y_range_name='rrcum'), 'right')
         p1.line(x='time', y='rrcum', source=df, line_width=4, color=pcol, y_range_name='rrcum', legend = 'Precipitation')
         hover_p1[0].tooltips.append(('Cumulated rainsum', '@rrcum{f0.00} mm'))
         p1.yaxis[2].axis_label_text_font_size = font_size_label
         p1.yaxis[2].major_label_text_font_size = font_size_ticker
         p1.yaxis[2].major_label_text_color = pcol
+        p1.yaxis[2].axis_label = 'Precipitation (mm)'
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(), 
                      fill_color='blue', line_alpha=0, 
                      line_width=0, fill_alpha=0.5, 
                      legend = 'Rain rate',  y_range_name='rrcum')
         rr.visible = False
-        # Hide legend's title if there was no precipitation (legend is also not shown)
-        if df['rrcum'].sum() > 0: 
-                p1.yaxis[2].axis_label = 'Precipitation (mm)'
     
     # hover
     hover_p1.formatters = { "time": "datetime"}
@@ -167,6 +170,8 @@ def lower_plot(df, p1):
     p2.yaxis[1].major_label_text_font_size = font_size_ticker
     p2.yaxis[2].axis_label_text_font_size = font_size_label
     p2.yaxis[2].major_label_text_font_size = font_size_ticker
+    p2.yaxis[2].major_label_text_color = ffcol
+    p2.yaxis[0].major_label_text_color = pcol
     
     # hover
     hover_p2 = p2.select(dict(type=HoverTool))
@@ -182,8 +187,6 @@ def lower_plot(df, p1):
     p2.legend.location = "top_left"
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
-    
-    p2.yaxis[2].major_label_text_color = ffcol
     return p2
 
 
