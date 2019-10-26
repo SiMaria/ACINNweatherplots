@@ -81,6 +81,7 @@ def get_stats(df):
     df_min = df_min.transpose()
     df_min.columns.name = ''
     # max
+    cur_val = pd.DataFrame(df.iloc[0])
     cum = df.groupby(pd.Grouper(freq='D'))
     if nice_col_names['so'] in df.columns:
         df[nice_col_names['ssd_cum']] = cum[nice_col_names['so']].cumsum()
@@ -92,7 +93,7 @@ def get_stats(df):
     # stats
     stats = pd.concat([df_mean, df_min, df_max], keys=['mean', 'min', 'max'])
     stats.columns = stats.columns.strftime('%Y-%m-%d')
-    return stats
+    return stats, cur_val
 
 ##### Plot 1
 def upper_plot(df):
@@ -324,10 +325,13 @@ sts = {}
 tab = []
 for station in stations.index:
     df = read_data(stations['url'].loc[stations.index == station])
-    stats = get_stats(df).round(decimals=1)
+    [stats, cur_val] = get_stats(df)
+    stats = stats.round(decimals=1)
     p1[station] = upper_plot(df)
     p2[station] = lower_plot(df, p1[station])
-    sts[station] = Div(text='<h1 style="font-size:25px;">Statistics:</h1> {}'.format(stats.to_html()))
+    sts[station] =  Div(text='''<p style="font-size:20px;">Current values:</p> {}
+                                <p style="font-size:20px;">Statistics:</p> {}
+                                '''.format(cur_val.to_html(),stats.to_html()))
     tab.append(Panel(child=column(p1[station], p2[station], sts[station]),
                      title=station.capitalize()))
 
