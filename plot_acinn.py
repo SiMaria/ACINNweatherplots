@@ -243,7 +243,8 @@ stations = pd.DataFrame({'lat':[47.263631, 47.011203, 46.867521, 47.167300],
                          },
                          index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # todo correct coordinates
 
-#### template for Tab formatting
+#### Template for Tab formatting
+# Attention: works for Bokeh v1.3.4, might not work with other versions (e.g. below  v1.1.0)
 template = """
 {% block postamble %}
 <style>
@@ -252,12 +253,14 @@ template = """
     width: 200px;
     color: black;
     font-style: italic;
+    font-size: 20pt
 }
 .bk-root .bk-tabs-header .bk-tab.bk-active{
     background-color: white;
     color: black;
     font-style: normal;
     font-weight: bold;
+    font-size: 20pt
 }
 .bk-root .bk-tabs-header .bk-tab:hover{
     background-color: white
