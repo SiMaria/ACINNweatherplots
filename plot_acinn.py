@@ -49,8 +49,8 @@ def read_data(url):
     # calculate cumulative rainsum
     if 'rr' in df.columns:
         df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
-        rrcumday = df.groupby(pd.Grouper(freq='D'))
-        df['rrcum'] = rrcumday['rr'].cumsum()
+        rr_cumday = df.groupby(pd.Grouper(freq='D'))
+        df['rr_cum'] = rr_cumday['rr'].cumsum()
     return df
 
 def set_font_sizes_axis(p):
@@ -69,9 +69,10 @@ def get_stats(df):
     '''
     make datatable with statistics
     '''
-    if 'rrcum' in df.columns:
-        df = df.drop(columns='rrcum')
+    if 'rr_cum' in df.columns:
+        df = df.drop(columns='rr_cum')
     # mean
+    df = df.rename(columns=nice_col_names)
     df_mean = df.resample('1D').mean()
     df_mean = df_mean.transpose()
     df_mean.columns.name = ''
@@ -81,10 +82,10 @@ def get_stats(df):
     df_min.columns.name = ''
     # max
     cum = df.groupby(pd.Grouper(freq='D'))
-    if 'so' in df.columns:
-        df['ssd_cum'] = cum['so'].cumsum()
-    if 'rr' in df.columns:
-        df['rr_cum'] = cum['rr'].cumsum()
+    if nice_col_names['so'] in df.columns:
+        df[nice_col_names['ssd_cum']] = cum[nice_col_names['so']].cumsum()
+    if nice_col_names['rr'] in df.columns:
+        df[nice_col_names['rr_cum']] = cum[nice_col_names['rr']].cumsum()
     df_max = df.resample('1D').max()
     df_max = df_max.transpose()
     df_max.columns.name = ''
@@ -138,14 +139,14 @@ def upper_plot(df):
         hover_p1[0].tooltips.append(('relative humidity', '@rf{f0.0} %'))
 
     # precipitation (daily accumulated)
-    if 'rrcum' in df.columns:
-        if df['rrcum'].sum() > 0: #axis would disappear when there was no rain measured
-            p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=(df['rrcum'].max() + df['rrcum'].max()*0.1))
+    if 'rr_cum' in df.columns:
+        if df['rr_cum'].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges['rr_cum'] = Range1d(start=0, end=(df['rr_cum'].max() + df['rr_cum'].max()*0.1))
         else:
-            p1.extra_y_ranges['rrcum'] = Range1d(start=0, end=10)
-        p1.add_layout(LinearAxis(y_range_name='rrcum'), 'right')
-        p1.line(x='time', y='rrcum', source=df, line_width=4, color=pcol, y_range_name='rrcum', legend = 'Precipitation')
-        hover_p1[0].tooltips.append(('Cumulated rainsum', '@rrcum{f0.0} mm'))
+            p1.extra_y_ranges['rr_cum'] = Range1d(start=0, end=10)
+        p1.add_layout(LinearAxis(y_range_name='rr_cum'), 'right')
+        p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Precipitation')
+        hover_p1[0].tooltips.append(('Cumulated precipitation', '@rr_cum{f0.0} mm'))
         p1.yaxis[2].axis_label_text_font_size = font_size_label
         p1.yaxis[2].major_label_text_font_size = font_size_ticker
         p1.yaxis[2].major_label_text_color = pcol
@@ -154,7 +155,7 @@ def upper_plot(df):
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
                      fill_color='blue', line_alpha=0,
                      line_width=0, fill_alpha=0.5,
-                     legend = 'Rain rate',  y_range_name='rrcum')
+                     legend = 'Rain rate',  y_range_name='rr_cum')
         rr.visible = False
 
     # hover
@@ -235,6 +236,20 @@ pcol = 'blue'
 hcol = 'green'
 tcol = 'red'
 socol = 'yellow'
+
+
+nice_col_names = {
+    'dd' : 'Wind direction',
+    'ff' : 'Wind speed',
+    'p' : 'Pressure',
+    'rr' : 'Rain rate',
+    'so' : 'Sunshine duration',
+    'tl' : 'Temperature',
+    'tp' : 'Dewpoint',
+    'rf' : 'Relative humidity',
+    'rr_cum' : 'Cumulated precipitation',
+    'ssd_cum' : 'Cumulated sunshineduration',
+}
 #447.167300, 11.457867
 # If station selection changes, change this dataframe
 stations = pd.DataFrame({'lat':[47.263631, 47.011203, 46.867521, 47.167300],
@@ -302,8 +317,6 @@ map_plot.xaxis[0].axis_label_text_font_size = font_size_label
 map_plot.xaxis[0].major_label_text_font_size = font_size_ticker
 
 
-
-
 ####### generating plots for the stations
 p1 = {}
 p2 = {}
@@ -314,7 +327,7 @@ for station in stations.index:
     stats = get_stats(df).round(decimals=1)
     p1[station] = upper_plot(df)
     p2[station] = lower_plot(df, p1[station])
-    sts[station] = Div(text="{}".format(stats.to_html()))
+    sts[station] = Div(text='<h1 style="font-size:25px;">Statistics:</h1> {}'.format(stats.to_html()))
     tab.append(Panel(child=column(p1[station], p2[station], sts[station]),
                      title=station.capitalize()))
 
