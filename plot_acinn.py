@@ -49,8 +49,9 @@ def read_data(url):
     # calculate cumulative rainsum
     if 'rr' in df.columns:
         df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
+        df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
         rr_cumday = df.groupby(pd.Grouper(freq='D'))
-        df['rr_cum'] = rr_cumday['rr'].cumsum()
+        df['rr_cum'] = rr_cumday['rm'].cumsum()
     return df
 
 def set_font_sizes_axis(p):
@@ -86,7 +87,7 @@ def get_stats(df):
     if nice_col_names['so'] in df.columns:
         df[nice_col_names['ssd_cum']] = cum[nice_col_names['so']].cumsum()
     if nice_col_names['rr'] in df.columns:
-        df[nice_col_names['rr_cum']] = cum[nice_col_names['rr']].cumsum()
+        df[nice_col_names['rr_cum']] = cum[nice_col_names['rm']].cumsum()
     df_max = df.resample('1D').max()
     df_max = df_max.transpose()
     df_max.columns.name = ''
@@ -236,7 +237,7 @@ ddcol = 'black'
 pcol = 'blue'
 hcol = 'green'
 tcol = 'red'
-socol = 'yellow'
+socol = 'gold'
 
 
 nice_col_names = {
@@ -244,6 +245,7 @@ nice_col_names = {
     'ff' : 'Wind speed',
     'p' : 'Pressure',
     'rr' : 'Rain rate',
+    'rm' : 'Rainfall',
     'so' : 'Sunshine duration',
     'tl' : 'Temperature',
     'tp' : 'Dewpoint',
@@ -253,11 +255,11 @@ nice_col_names = {
 }
 #447.167300, 11.457867
 # If station selection changes, change this dataframe
-stations = pd.DataFrame({'lat':[47.263631, 47.011203, 46.867521, 47.167300],
-                         'lon':[11.385571, 11.480401, 11.024800, 11.457867],
-                         'height':[609, 2107, 1938, 1080],
+stations = pd.DataFrame({'lat':[47.260, 47.011, 46.867, 47.187],
+                         'lon':[11.384, 11.479, 11.024, 11.429],
+                         'height':[578, 2107, 1942, 1080],
                          },
-                         index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # todo correct coordinates
+                         index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # coordinates based on metinf
 
 #### Template for Tab formatting
 # Attention: works for Bokeh v1.3.4, might not work with other versions (e.g. below  v1.1.0)
