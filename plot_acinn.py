@@ -49,8 +49,9 @@ def read_data(url):
     # calculate cumulative rainsum
     if 'rr' in df.columns:
         df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
+        df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
         rr_cumday = df.groupby(pd.Grouper(freq='D'))
-        df['rr_cum'] = rr_cumday['rr'].cumsum()
+        df['rr_cum'] = rr_cumday['rm'].cumsum()
     return df
 
 def set_font_sizes_axis(p):
@@ -86,7 +87,7 @@ def get_stats(df):
     if nice_col_names['so'] in df.columns:
         df[nice_col_names['ssd_cum']] = cum[nice_col_names['so']].cumsum()
     if nice_col_names['rr'] in df.columns:
-        df[nice_col_names['rr_cum']] = cum[nice_col_names['rr']].cumsum()
+        df[nice_col_names['rr_cum']] = cum[nice_col_names['rm']].cumsum()
     df_max = df.resample('1D').max()
     df_max = df_max.transpose()
     df_max.columns.name = ''
@@ -244,6 +245,7 @@ nice_col_names = {
     'ff' : 'Wind speed',
     'p' : 'Pressure',
     'rr' : 'Rain rate',
+    'rm' : 'Rainfall',
     'so' : 'Sunshine duration',
     'tl' : 'Temperature',
     'tp' : 'Dewpoint',
