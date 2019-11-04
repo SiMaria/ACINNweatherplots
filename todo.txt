@@ -2,7 +2,7 @@ Todo:
 
 MAP:
 x add station height (done)
-* correct coordinates (by now only approximately)  - also for height
+* correct coordinates and height (by now based on metinf - lat/lon 3 decimal places)
 * if somehow possible: connected to shown location
   (either by clicking on map show location, or by choosing the tab -> highlight the location
 * Map could also show up only in an additional tab
@@ -15,7 +15,9 @@ x Accumulated precipitation - might be overlapping with sunshine (hidden by defa
 
 General:
 x Axis (Font size, description, color...) (done)
+* sunshine: yellow axis label almost invisible (done)
 
 Table (or sth similar):
 x current values (done)
 x ev. some basic statistics (done)
+* add units (done)
