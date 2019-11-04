@@ -117,11 +117,20 @@ def upper_plot(df):
         p1.yaxis[1].axis_label_text_font_size = font_size_label
         p1.yaxis[1].major_label_text_font_size = font_size_ticker
         p1.yaxis[1].major_label_text_color = socol
+        p1.yaxis[1].axis_label_text_color = socol
+        p1.yaxis[1].minor_tick_line_color = socol
+        p1.yaxis[1].major_tick_line_color = socol
+        p1.yaxis[1].axis_line_color = socol
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
 
     # temperature
     h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
     p1.yaxis[0].axis_label = 'Temperature (°C)'
+    p1.yaxis[0].major_label_text_color = tcol
+    p1.yaxis[0].axis_label_text_color = tcol
+    p1.yaxis[0].minor_tick_line_color = tcol
+    p1.yaxis[0].major_tick_line_color = tcol
+    p1.yaxis[0].axis_line_color = tcol
 
     # dew point
     if 'tp' in df.columns:
@@ -138,7 +147,11 @@ def upper_plot(df):
         p1.yaxis[1].axis_label_text_font_size = font_size_label
         p1.yaxis[1].major_label_text_font_size = font_size_ticker
         p1.yaxis[1].major_label_text_color = hcol
-        hover_p1[0].tooltips.append(('relative humidity', '@rf{f0.0} %'))
+        p1.yaxis[1].axis_label_text_color = hcol
+        p1.yaxis[1].minor_tick_line_color = hcol
+        p1.yaxis[1].major_tick_line_color = hcol
+        p1.yaxis[1].axis_line_color = hcol
+        hover_p1[0].tooltips.append(('Relative Humidity', '@rf{f0.0} %'))
 
     # precipitation (daily accumulated)
     if 'rr_cum' in df.columns:
@@ -152,6 +165,10 @@ def upper_plot(df):
         p1.yaxis[2].axis_label_text_font_size = font_size_label
         p1.yaxis[2].major_label_text_font_size = font_size_ticker
         p1.yaxis[2].major_label_text_color = pcol
+        p1.yaxis[2].axis_label_text_color = pcol
+        p1.yaxis[2].minor_tick_line_color = pcol
+        p1.yaxis[2].major_tick_line_color = pcol
+        p1.yaxis[2].axis_line_color = pcol
         p1.yaxis[2].axis_label = 'Precipitation (mm)'
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
@@ -203,13 +220,21 @@ def lower_plot(df, p1):
     p2.yaxis[2].axis_label_text_font_size = font_size_label
     p2.yaxis[2].major_label_text_font_size = font_size_ticker
     p2.yaxis[2].major_label_text_color = ffcol
+    p2.yaxis[2].axis_label_text_color = ffcol
+    p2.yaxis[2].minor_tick_line_color = ffcol
+    p2.yaxis[2].major_tick_line_color = ffcol
+    p2.yaxis[2].axis_line_color = ffcol
     p2.yaxis[0].major_label_text_color = pcol
+    p2.yaxis[0].axis_label_text_color = pcol
+    p2.yaxis[0].minor_tick_line_color = pcol
+    p2.yaxis[0].major_tick_line_color = pcol
+    p2.yaxis[0].axis_line_color = pcol
 
     # hover
     hover_p2 = p2.select(dict(type=HoverTool))
     hover_p2.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"),
                          ('Pressure', '@p{f0.0} hPa'),
-                         ('Winddirection', '@dd{int} °'),
+                         ('Winddirection', '@dd{int} deg'),
                          ('Windspeed', '@ff{f0.0} (ms⁻¹)')]
     hover_p2.formatters = { "time": "datetime"}
     hover_p2.mode = 'vline'
@@ -227,7 +252,7 @@ def lower_plot(df, p1):
 output_file("acinn_weather_plot.html")
 base_url = 'http://meteo145.uibk.ac.at/'
 time = str(7)
-fwidth = 900
+fwidth = 1200
 fhgt = 400
 font_size_label = "20pt"
 font_size_ticker = "15pt"
@@ -237,14 +262,14 @@ ddcol = 'black'
 pcol = 'blue'
 hcol = 'green'
 tcol = 'red'
-socol = 'gold'
+socol = 'orange'
 
 
 nice_col_names = {
     'dd' : 'Wind direction (deg)',
-    'ff' : 'Wind speed (m/ s)',
+    'ff' : 'Wind speed (m s⁻¹)',
     'p' : 'Pressure (hPa)',
-    'rr' : 'Precipitation rate (mm/ h)',
+    'rr' : 'Precipitation rate (mm h⁻¹)',
     'rm' : 'Precipitation (mm per 10 min)',
     'so' : 'Sunshine duration (min per 10 min)',
     'tl' : 'Temperature (°C)',
@@ -320,7 +345,6 @@ map_plot.yaxis[0].axis_label_text_font_size = font_size_label
 map_plot.yaxis[0].major_label_text_font_size = font_size_ticker
 map_plot.xaxis[0].axis_label_text_font_size = font_size_label
 map_plot.xaxis[0].major_label_text_font_size = font_size_ticker
-
 
 ####### generating plots for the stations
 p1 = {}
