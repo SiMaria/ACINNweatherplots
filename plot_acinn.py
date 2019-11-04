@@ -157,7 +157,7 @@ def upper_plot(df):
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
                      fill_color='blue', line_alpha=0,
                      line_width=0, fill_alpha=0.5,
-                     legend = 'Rain rate',  y_range_name='rr_cum')
+                     legend = 'Precipitation rate',  y_range_name='rr_cum')
         rr.visible = False
 
     # hover
@@ -260,6 +260,8 @@ stations = pd.DataFrame({'lat':[47.260, 47.011, 46.867, 47.187],
                         'height':[578, 2107, 1942, 1080],
                         },
                         index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # coordinates based on metinf
+# lazy workaround for capital station name in map
+stations['cap_station'] = stations.index.str.capitalize()
 
 #### Template for Tab formatting
 # Attention: works for Bokeh v1.3.4, might not work with other versions (e.g. below  v1.1.0)
@@ -309,7 +311,7 @@ map_plot.add_tile(tile_provider)
 map_plot.circle(x="x", y="y", size=15, fill_color="blue",
                 fill_alpha=0.5, source=stations);
 hover_map = map_plot.select(dict(type=HoverTool))
-hover_map.tooltips = [("Station", "@index".capitalize()), # todo capitalize!!!!
+hover_map.tooltips = [("Station", "@cap_station"), # todo capitalize!!!!
                       ('Height', '@height m')]
 hover_map.mode = 'mouse'
 map_plot.yaxis[0].axis_label = 'Latitude (°)'
