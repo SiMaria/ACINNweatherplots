@@ -241,25 +241,25 @@ socol = 'gold'
 
 
 nice_col_names = {
-    'dd' : 'Wind direction',
-    'ff' : 'Wind speed',
-    'p' : 'Pressure',
-    'rr' : 'Rain rate',
-    'rm' : 'Rainfall',
-    'so' : 'Sunshine duration',
-    'tl' : 'Temperature',
-    'tp' : 'Dewpoint',
-    'rf' : 'Relative humidity',
-    'rr_cum' : 'Cumulated precipitation',
-    'ssd_cum' : 'Cumulated sunshineduration',
+    'dd' : 'Wind direction (deg)',
+    'ff' : 'Wind speed (m/ s)',
+    'p' : 'Pressure (hPa)',
+    'rr' : 'Precipitation rate (mm/ h)',
+    'rm' : 'Precipitation (mm per 10 min)',
+    'so' : 'Sunshine duration (min per 10 min)',
+    'tl' : 'Temperature (°C)',
+    'tp' : 'Dewpoint (°C)',
+    'rf' : 'Relative humidity (%)',
+    'rr_cum' : 'Cumulated precipitation (mm)',
+    'ssd_cum' : 'Cumulated sunshine duration (min)',
 }
 #447.167300, 11.457867
 # If station selection changes, change this dataframe
 stations = pd.DataFrame({'lat':[47.260, 47.011, 46.867, 47.187],
-                         'lon':[11.384, 11.479, 11.024, 11.429],
-                         'height':[578, 2107, 1942, 1080],
-                         },
-                         index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # coordinates based on metinf
+                        'lon':[11.384, 11.479, 11.024, 11.429],
+                        'height':[578, 2107, 1942, 1080],
+                        },
+                        index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # coordinates based on metinf
 
 #### Template for Tab formatting
 # Attention: works for Bokeh v1.3.4, might not work with other versions (e.g. below  v1.1.0)
