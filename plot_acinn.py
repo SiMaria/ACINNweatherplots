@@ -146,6 +146,8 @@ def get_stats(df):
     df_max = df.resample('1D').max()
     df_max = df_max.transpose()
     df_max.columns.name = ''
+    # current value
+    cur_val = pd.DataFrame(df.iloc[0])
     # cumulated
     cum = df.groupby(pd.Grouper(freq='D'))
     if nice_col_names['so'] in df.columns:
@@ -156,8 +158,6 @@ def get_stats(df):
     df_cum = df_cum.filter(like='Cumulated')
     df_cum = df_cum.transpose()
     df_cum.columns.name = ''
-    # current value
-    cur_val = pd.DataFrame(df.iloc[0])
     # stats
     stats = pd.concat([df_mean, df_min, df_max, df_cum], keys=['mean', 'min', 'max','cum'])
     stats.columns = stats.columns.strftime('%Y-%m-%d')
