@@ -10,20 +10,22 @@ from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs, Div
 
-#### Setup 
+
+#### Setup
 output_file("acinn_weather_plot.html")
 base_url = 'http://meteo145.uibk.ac.at/'
 time = str(7)
-fwidth = 900
-fhgt = 400
-font_size_label = "16pt"
-font_size_ticker = "15pt"
-font_size_legend = "10pt"
-ffcol = 'red'
+fwidth = 800
+fhgt = 325
+fborder = 25
+font_size_label = "19pt"
+font_size_ticker = "14pt"
+font_size_legend = "11pt"
+ffcol = 'firebrick' #'#e41a1c'
 ddcol = 'black'
-pcol = 'blue'
-hcol = 'green'
-tcol = 'red'
+pcol = '#0173b2' #'steelblue'
+hcol =  'seagreen' #'#029e73'
+tcol = 'firebrick'
 socol = 'orange'
 
 
@@ -60,17 +62,25 @@ template = """
     width: 200px;
     color: black;
     font-style: italic;
-    font-size: 20pt
+    font-size: 18pt
 }
 .bk-root .bk-tabs-header .bk-tab.bk-active{
     background-color: white;
     color: black;
     font-style: normal;
     font-weight: bold;
-    font-size: 20pt
+    font-size: 18pt
 }
 .bk-root .bk-tabs-header .bk-tab:hover{
-    background-color: white
+    background-color: white;
+    font-size: 18pt
+}
+table.dataframe {
+font-size:115%;
+text-align: center;
+}
+table.dataframe th {
+    text-align: left;
 }
 </style>
 {% endblock %}
@@ -160,7 +170,7 @@ def get_stats(df):
     df_cum.columns.name = ''
     # stats
     stats = pd.concat([df_mean, df_min, df_max, df_cum], keys=['mean', 'min', 'max','cum'])
-    stats.columns = stats.columns.strftime('%Y-%m-%d')
+    stats.columns = stats.columns.strftime(' %d %b ')
     return stats, cur_val
 
 ##### Plot 1
@@ -170,10 +180,14 @@ def upper_plot(df):
                 tools=p1_tools,
                 x_range=(pd.to_datetime(df.index[-1])-timedelta(days=1), pd.to_datetime(df.index[-1])));
 
+    p1.min_border_top = fborder
+    p1.min_border_bottom = fborder
+
     p1 = set_font_sizes_axis(p1)
     hover_p1 = p1.select(dict(type=HoverTool))
     hover_p1.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"),
                          ('Temperature', "@tl{f0.0} °C")]#
+
     # sunshine duration
     if 'so' in df.columns:
         p1.extra_y_ranges = {'ssd': Range1d(start=0, end=10)}
@@ -227,7 +241,7 @@ def upper_plot(df):
         else:
             p1.extra_y_ranges['rr_cum'] = Range1d(start=0, end=10)
         p1.add_layout(LinearAxis(y_range_name='rr_cum'), 'right')
-        p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Cumulated precipitation 24h')
+        p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Cumulated precipitation (24 h)')
         hover_p1[0].tooltips.append(('Cumulated precipitation', '@rr_cum{f0.0} mm'))
         p1.yaxis[2].axis_label_text_font_size = font_size_label
         p1.yaxis[2].major_label_text_font_size = font_size_ticker
@@ -239,7 +253,7 @@ def upper_plot(df):
         p1.yaxis[2].axis_label = 'Cumulated precipitation 24h (mm)'
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
-                     fill_color='blue', line_alpha=0,
+                     fill_color=pcol, line_alpha=0,
                      line_width=0, fill_alpha=0.5,
                      legend = 'Precipitation rate',  y_range_name='rr_cum')
         rr.visible = False
@@ -262,10 +276,13 @@ def lower_plot(df, p1):
     p2 = figure(width = fwidth, height = fhgt,x_axis_type="datetime",
                 tools=p2_tools, x_range=p1.x_range);
 
+    p2.min_border_top = fborder
+    p2.min_border_bottom = fborder
+
     p2 = set_font_sizes_axis(p2)
 
     # pressure
-    h_line = p2.line(x='time', y='p', source=df, line_width=4, color='blue', legend = 'Pressure')
+    h_line = p2.line(x='time', y='p', source=df, line_width=4, color=pcol, legend = 'Pressure')
     p2.y_range=Range1d(df['p'].min()-5, df['p'].max()+5)
     p2.yaxis.axis_label = 'Pressure (hPa)'
 
@@ -276,7 +293,7 @@ def lower_plot(df, p1):
     p2.add_layout(LinearAxis(y_range_name='winddir'), 'right')
     p2.add_layout(LinearAxis(y_range_name="windspd"), 'right')
     p2.circle(x='time', y='dd', source=df, line_width=4, color='black', y_range_name='winddir', legend = 'Wind Direction')
-    p2.line(x='time', y='ff', source=df, line_width=2, color='red', y_range_name='windspd', legend = 'Wind speed')
+    p2.line(x='time', y='ff', source=df, line_width=4, color=ffcol, y_range_name='windspd', legend = 'Wind speed')
 
 
     p2.yaxis[0].axis_label = 'Pressure (hPa)'
@@ -313,8 +330,6 @@ def lower_plot(df, p1):
     p2.legend.label_text_font_size = font_size_legend
     return p2
 
-
-
 # filling url column
 stations['url'] = ''
 for station in stations.index:
@@ -341,10 +356,9 @@ map_plot = figure(x_range=(1162560, 1435315), y_range=(5898792 , 6018228),
                   plot_width=(fwidth-150), plot_height=fhgt,
                   x_axis_type="mercator", y_axis_type="mercator",
                   tools=map_tools)
-
 map_plot.add_tile(mq_tile_source)
-map_plot.circle(x="x", y="y", size=15, fill_color="blue",
-                fill_alpha=0.5, source=stations);
+map_plot.circle(x="x", y="y", size=15, fill_color="firebrick",
+                fill_alpha=0.9, source=stations);
 hover_map = map_plot.select(dict(type=HoverTool))
 hover_map.tooltips = [("Station", "@cap_station"), # todo capitalize!!!!
                       ('Height', '@height m')]
@@ -365,16 +379,16 @@ tab = []
 for station in stations.index:
     df = read_data(stations['url'].loc[stations.index == station])
     [stats, cur_val] = get_stats(df)
+    cur_val = cur_val.round(decimals=2)
     stats = stats.round(decimals=1)
     cur_val = cur_val.round(decimals=1)
     p1[station] = upper_plot(df)
     p2[station] = lower_plot(df, p1[station])
-    sts[station] =  Div(text='''<p style="font-size:18px;">Current values:</p> {}
-                                <p style="font-size:18px;">Statistics:</p> {}
+    sts[station] =  Div(text='''<p style="font-size:24px;font-weight: bold;">Current values:</p> {}
+                                <p style="font-size:24px;font-weight: bold;">Statistics:</p> {}
                                 '''.format(cur_val.to_html(),stats.to_html()))
     tab.append(Panel(child=column(p1[station], p2[station], sts[station]),
                      title=station.capitalize()))
-
 
 #### Layout and save
 doc_layout = layout(children=[map_plot, Tabs(tabs=tab)])
