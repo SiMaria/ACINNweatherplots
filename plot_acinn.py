@@ -14,11 +14,11 @@ from bokeh.models.widgets import Panel, Tabs, Div
 output_file("acinn_weather_plot.html")
 base_url = 'http://meteo145.uibk.ac.at/'
 time = str(7)
-fwidth = 1200
+fwidth = 900
 fhgt = 400
-font_size_label = "20pt"
+font_size_label = "16pt"
 font_size_ticker = "15pt"
-font_size_legend = "12pt"
+font_size_legend = "10pt"
 ffcol = 'red'
 ddcol = 'black'
 pcol = 'blue'
@@ -75,7 +75,6 @@ template = """
 </style>
 {% endblock %}
 """
-
 
 def get_width():
     '''
@@ -144,17 +143,23 @@ def get_stats(df):
     df_min = df_min.transpose()
     df_min.columns.name = ''
     # max
-    cur_val = pd.DataFrame(df.iloc[0])
+    df_max = df.resample('1D').max()
+    df_max = df_max.transpose()
+    df_max.columns.name = ''
+    # cumulated
     cum = df.groupby(pd.Grouper(freq='D'))
     if nice_col_names['so'] in df.columns:
         df[nice_col_names['ssd_cum']] = cum[nice_col_names['so']].cumsum()
     if nice_col_names['rr'] in df.columns:
         df[nice_col_names['rr_cum']] = cum[nice_col_names['rm']].cumsum()
-    df_max = df.resample('1D').max()
-    df_max = df_max.transpose()
-    df_max.columns.name = ''
+    df_cum = df.resample('1D').max()
+    df_cum = df_cum.filter(like='Cumulated')
+    df_cum = df_cum.transpose()
+    df_cum.columns.name = ''
+    # current value
+    cur_val = pd.DataFrame(df.iloc[0])
     # stats
-    stats = pd.concat([df_mean, df_min, df_max], keys=['mean', 'min', 'max'])
+    stats = pd.concat([df_mean, df_min, df_max, df_cum], keys=['mean', 'min', 'max','cum'])
     stats.columns = stats.columns.strftime('%Y-%m-%d')
     return stats, cur_val
 
@@ -333,7 +338,7 @@ mq_tile_source = WMTSTileSource(**tile_options)
 
 map_tools = 'box_zoom,pan,save,hover,reset,wheel_zoom'
 map_plot = figure(x_range=(1162560, 1435315), y_range=(5898792 , 6018228),
-                  plot_width=600, plot_height=350,
+                  plot_width=(fwidth-150), plot_height=fhgt,
                   x_axis_type="mercator", y_axis_type="mercator",
                   tools=map_tools)
 
@@ -363,8 +368,8 @@ for station in stations.index:
     stats = stats.round(decimals=1)
     p1[station] = upper_plot(df)
     p2[station] = lower_plot(df, p1[station])
-    sts[station] =  Div(text='''<p style="font-size:20px;">Current values:</p> {}
-                                <p style="font-size:20px;">Statistics:</p> {}
+    sts[station] =  Div(text='''<p style="font-size:18px;">Current values:</p> {}
+                                <p style="font-size:18px;">Statistics:</p> {}
                                 '''.format(cur_val.to_html(),stats.to_html()))
     tab.append(Panel(child=column(p1[station], p2[station], sts[station]),
                      title=station.capitalize()))
