@@ -73,7 +73,6 @@ template = """
 }
 .bk-root .bk-tabs-header .bk-tab:hover{
     background-color: white;
-    font-size: 18pt
 }
 table.dataframe {
 font-size:115%;
@@ -250,7 +249,7 @@ def upper_plot(df):
         p1.yaxis[2].minor_tick_line_color = pcol
         p1.yaxis[2].major_tick_line_color = pcol
         p1.yaxis[2].axis_line_color = pcol
-        p1.yaxis[2].axis_label = 'Precipitation 24h (mm)'
+        p1.yaxis[2].axis_label = 'Precipitation (mm)'
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
                      fill_color=pcol, line_alpha=0,
@@ -358,7 +357,7 @@ map_plot = figure(x_range=(1162560, 1435315), y_range=(5898792 , 6018228),
                   tools=map_tools)
 map_plot.min_border_left = 75
 map_plot.add_tile(mq_tile_source)
-map_plot.circle(x="x", y="y", size=18, fill_color="firebrick",
+map_plot.circle(x="x", y="y", size=18, fill_color="firebrick",color = 'firebrick',
                 fill_alpha=0.7, source=stations);
 hover_map = map_plot.select(dict(type=HoverTool))
 hover_map.tooltips = [("Station", "@cap_station"), # todo capitalize!!!!
