@@ -4,15 +4,77 @@ from datetime import datetime, timedelta
 
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d, WheelZoomTool
-from bokeh.models import HoverTool, DatetimeTickFormatter, DateFormatter
+from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
 from bokeh.tile_providers import get_provider, Vendors
-#from bokeh.models.renderers import GlyphRenderer
-#from bokeh.models.widgets import DataTable, TableColumn, Slider, Dropdown
-from bokeh.layouts import layout, column, row, widgetbox, gridplot
+from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs, Div
-from bokeh.models.widgets import DateRangeSlider
 
+#### Setup 
+output_file("acinn_weather_plot.html")
+base_url = 'http://meteo145.uibk.ac.at/'
+time = str(7)
+fwidth = 1200
+fhgt = 400
+font_size_label = "20pt"
+font_size_ticker = "15pt"
+font_size_legend = "12pt"
+ffcol = 'red'
+ddcol = 'black'
+pcol = 'blue'
+hcol = 'green'
+tcol = 'red'
+socol = 'orange'
+
+
+nice_col_names = {
+    'dd' : 'Wind direction (deg)',
+    'ff' : 'Wind speed (m s⁻¹)',
+    'p' : 'Pressure (hPa)',
+    'rr' : 'Precipitation rate (mm h⁻¹)',
+    'rm' : 'Precipitation (mm per 10 min)',
+    'so' : 'Sunshine duration (min per 10 min)',
+    'tl' : 'Temperature (°C)',
+    'tp' : 'Dewpoint (°C)',
+    'rf' : 'Relative humidity (%)',
+    'rr_cum' : 'Cumulated precipitation (mm)',
+    'ssd_cum' : 'Cumulated sunshine duration (min)',
+}
+#447.167300, 11.457867
+# If station selection changes, change this dataframe
+stations = pd.DataFrame({'lat':[47.260, 47.011, 46.867, 47.187],
+                        'lon':[11.384, 11.479, 11.024, 11.429],
+                        'height':[578, 2107, 1942, 1080],
+                        },
+                        index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # coordinates based on metinf
+# lazy workaround for capital station name in map
+stations['cap_station'] = stations.index.str.capitalize()
+
+#### Template for Tab formatting
+# Attention: works for Bokeh v1.3.4, might not work with other versions (e.g. below  v1.1.0)
+template = """
+{% block postamble %}
+<style>
+.bk-root .bk-tab {
+    background-color: white;
+    width: 200px;
+    color: black;
+    font-style: italic;
+    font-size: 20pt
+}
+.bk-root .bk-tabs-header .bk-tab.bk-active{
+    background-color: white;
+    color: black;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 20pt
+}
+.bk-root .bk-tabs-header .bk-tab:hover{
+    background-color: white
+}
+</style>
+{% endblock %}
+"""
 
 
 def get_width():
@@ -44,8 +106,8 @@ def read_data(url):
     df = df.set_index('time')
     df = df.drop(columns='datumsec')
     # kick out missing values
-    for column in df.columns:
-        df[df[column] == -99.9] = np.nan
+    for col in df.columns:
+        df[df[col] == -99.9] = np.nan
     # calculate cumulative rainsum
     if 'rr' in df.columns:
         df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
@@ -248,73 +310,6 @@ def lower_plot(df, p1):
 
 
 
-#### Setting Up
-output_file("acinn_weather_plot.html")
-base_url = 'http://meteo145.uibk.ac.at/'
-time = str(7)
-fwidth = 1200
-fhgt = 400
-font_size_label = "20pt"
-font_size_ticker = "15pt"
-font_size_legend = "12pt"
-ffcol = 'red'
-ddcol = 'black'
-pcol = 'blue'
-hcol = 'green'
-tcol = 'red'
-socol = 'orange'
-
-
-nice_col_names = {
-    'dd' : 'Wind direction (deg)',
-    'ff' : 'Wind speed (m s⁻¹)',
-    'p' : 'Pressure (hPa)',
-    'rr' : 'Precipitation rate (mm h⁻¹)',
-    'rm' : 'Precipitation (mm per 10 min)',
-    'so' : 'Sunshine duration (min per 10 min)',
-    'tl' : 'Temperature (°C)',
-    'tp' : 'Dewpoint (°C)',
-    'rf' : 'Relative humidity (%)',
-    'rr_cum' : 'Cumulated precipitation (mm)',
-    'ssd_cum' : 'Cumulated sunshine duration (min)',
-}
-#447.167300, 11.457867
-# If station selection changes, change this dataframe
-stations = pd.DataFrame({'lat':[47.260, 47.011, 46.867, 47.187],
-                        'lon':[11.384, 11.479, 11.024, 11.429],
-                        'height':[578, 2107, 1942, 1080],
-                        },
-                        index=['innsbruck', 'sattelberg', 'obergurgl', 'ellboegen']) # coordinates based on metinf
-# lazy workaround for capital station name in map
-stations['cap_station'] = stations.index.str.capitalize()
-
-#### Template for Tab formatting
-# Attention: works for Bokeh v1.3.4, might not work with other versions (e.g. below  v1.1.0)
-template = """
-{% block postamble %}
-<style>
-.bk-root .bk-tab {
-    background-color: white;
-    width: 200px;
-    color: black;
-    font-style: italic;
-    font-size: 20pt
-}
-.bk-root .bk-tabs-header .bk-tab.bk-active{
-    background-color: white;
-    color: black;
-    font-style: normal;
-    font-weight: bold;
-    font-size: 20pt
-}
-.bk-root .bk-tabs-header .bk-tab:hover{
-    background-color: white
-}
-</style>
-{% endblock %}
-"""
-
-
 # filling url column
 stations['url'] = ''
 for station in stations.index:
@@ -326,13 +321,23 @@ for station in stations.index:
 
 
 #### Mapplot
-tile_provider = get_provider(Vendors.CARTODBPOSITRON)
+tile_options = {}
+tile_options['url'] = 'http://tile.stamen.com/terrain/{Z}/{X}/{Y}.png'
+tile_options['attribution'] = """
+    Map tiles by <a href="http://stamen.com">Stamen Design</a>, under
+    <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.
+    Data by <a href="http://openstreetmap.org">OpenStreetMap</a>,
+    under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.
+    """
+mq_tile_source = WMTSTileSource(**tile_options)
+
 map_tools = 'box_zoom,pan,save,hover,reset,wheel_zoom'
-map_plot = figure(x_range=(1108137, 1417582), y_range=(5895123 , 6088551),
+map_plot = figure(x_range=(1162560, 1435315), y_range=(5898792 , 6018228),
                   plot_width=600, plot_height=350,
                   x_axis_type="mercator", y_axis_type="mercator",
                   tools=map_tools)
-map_plot.add_tile(tile_provider)
+
+map_plot.add_tile(mq_tile_source)
 map_plot.circle(x="x", y="y", size=15, fill_color="blue",
                 fill_alpha=0.5, source=stations);
 hover_map = map_plot.select(dict(type=HoverTool))
@@ -345,6 +350,7 @@ map_plot.yaxis[0].axis_label_text_font_size = font_size_label
 map_plot.yaxis[0].major_label_text_font_size = font_size_ticker
 map_plot.xaxis[0].axis_label_text_font_size = font_size_label
 map_plot.xaxis[0].major_label_text_font_size = font_size_ticker
+map_plot.toolbar.active_scroll = map_plot.select_one(WheelZoomTool)
 
 ####### generating plots for the stations
 p1 = {}
