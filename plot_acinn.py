@@ -366,6 +366,7 @@ for station in stations.index:
     df = read_data(stations['url'].loc[stations.index == station])
     [stats, cur_val] = get_stats(df)
     stats = stats.round(decimals=1)
+    cur_val = cur_val.round(decimals=1)
     p1[station] = upper_plot(df)
     p2[station] = lower_plot(df, p1[station])
     sts[station] =  Div(text='''<p style="font-size:18px;">Current values:</p> {}
