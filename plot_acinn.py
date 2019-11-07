@@ -227,7 +227,7 @@ def upper_plot(df):
         else:
             p1.extra_y_ranges['rr_cum'] = Range1d(start=0, end=10)
         p1.add_layout(LinearAxis(y_range_name='rr_cum'), 'right')
-        p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Precipitation')
+        p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Cumulated precipitation 24h')
         hover_p1[0].tooltips.append(('Cumulated precipitation', '@rr_cum{f0.0} mm'))
         p1.yaxis[2].axis_label_text_font_size = font_size_label
         p1.yaxis[2].major_label_text_font_size = font_size_ticker
@@ -236,7 +236,7 @@ def upper_plot(df):
         p1.yaxis[2].minor_tick_line_color = pcol
         p1.yaxis[2].major_tick_line_color = pcol
         p1.yaxis[2].axis_line_color = pcol
-        p1.yaxis[2].axis_label = 'Precipitation (mm)'
+        p1.yaxis[2].axis_label = 'Cumulated precipitation 24h (mm)'
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
                      fill_color='blue', line_alpha=0,
