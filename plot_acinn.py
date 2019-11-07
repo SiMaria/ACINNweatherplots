@@ -250,7 +250,7 @@ def upper_plot(df):
         p1.yaxis[2].minor_tick_line_color = pcol
         p1.yaxis[2].major_tick_line_color = pcol
         p1.yaxis[2].axis_line_color = pcol
-        p1.yaxis[2].axis_label = 'Cumulated precipitation 24h (mm)'
+        p1.yaxis[2].axis_label = 'Precipitation 24h (mm)'
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
                      fill_color=pcol, line_alpha=0,
@@ -353,12 +353,13 @@ mq_tile_source = WMTSTileSource(**tile_options)
 
 map_tools = 'box_zoom,pan,save,hover,reset,wheel_zoom'
 map_plot = figure(x_range=(1162560, 1435315), y_range=(5898792 , 6018228),
-                  plot_width=(fwidth-150), plot_height=fhgt,
+                  plot_width=(fwidth-75), plot_height=fhgt+fborder,
                   x_axis_type="mercator", y_axis_type="mercator",
                   tools=map_tools)
+map_plot.min_border_left = 75
 map_plot.add_tile(mq_tile_source)
-map_plot.circle(x="x", y="y", size=15, fill_color="firebrick",
-                fill_alpha=0.9, source=stations);
+map_plot.circle(x="x", y="y", size=18, fill_color="firebrick",
+                fill_alpha=0.7, source=stations);
 hover_map = map_plot.select(dict(type=HoverTool))
 hover_map.tooltips = [("Station", "@cap_station"), # todo capitalize!!!!
                       ('Height', '@height m')]
