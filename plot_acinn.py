@@ -156,7 +156,7 @@ def get_stats(df):
     df_max = df_max.transpose()
     df_max.columns.name = ''
     # current value
-    cur_val = pd.DataFrame(df.iloc[0])
+    cur_val = pd.DataFrame(df.iloc[-1])
     # cumulated
     cum = df.groupby(pd.Grouper(freq='D'))
     if nice_col_names['so'] in df.columns:
