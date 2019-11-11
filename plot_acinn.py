@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d, WheelZoomTool
 from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
+from bokeh.tile_providers import get_provider, Vendors
 from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs, Div
@@ -155,7 +156,7 @@ def get_stats(df):
     df_max = df_max.transpose()
     df_max.columns.name = ''
     # current value
-    cur_val = pd.DataFrame(df.iloc[-1])
+    cur_val = pd.DataFrame(df.iloc[0])
     # cumulated
     cum = df.groupby(pd.Grouper(freq='D'))
     if nice_col_names['so'] in df.columns:
