@@ -40,7 +40,7 @@ nice_col_names = {
     'tp' : 'Dewpoint (°C)',
     'rf' : 'Relative humidity (%)',
     'rr_cum' : 'Cumulated precipitation (mm)',
-    'ssd_cum' : 'Cumulated sunshine duration (min)',
+    'ssd_cum' : 'Cumulated sunshine duration (h)',
 }
 #447.167300, 11.457867
 # If station selection changes, change this dataframe
@@ -122,6 +122,12 @@ def read_data(url):
         df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
         rr_cumday = df.groupby(pd.Grouper(freq='D'))
         df['rr_cum'] = rr_cumday['rm'].cumsum()
+    # calculate cumulative sunshine duration
+    if 'so' in df.columns:
+        df[df['so'] < 0] = np.nan # missing value = -599.4000000000001???
+        ssd_cumday = df.groupby(pd.Grouper(freq='D'))
+        df['ssd_cum'] = ssd_cumday['so'].cumsum()/60
+
     return df
 
 def set_font_style_axis(p):
@@ -145,42 +151,85 @@ def get_stats(df):
 
     # current values
     cur_val = pd.DataFrame(df.iloc[-1])
-    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'rr_cum']
+    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'ssd_cum', 'rr_cum']
     sortby = []
     for i in sortlist:
         if i in cur_val.index: sortby.append(i)
     cur_val = cur_val.reindex(sortby)
     cur_val = cur_val.rename(index=nice_col_names)
-    cur_val.columns = cur_val.columns.strftime('%d %b %Y %H:%M UTC')
 
-    #if 'rr_cum' in df.columns:
-#        df = df.drop(columns='rr_cum')
-    # mean
-    df = df.rename(columns=nice_col_names)
+    # mean, min and max
     df_mean = df.resample('1D').mean()
-    df_mean = df_mean.transpose()
-    df_mean.columns.name = ''
-    # min
     df_min = df.resample('1D').min()
-    df_min = df_min.transpose()
-    df_min.columns.name = ''
-    # max
     df_max = df.resample('1D').max()
-    df_max = df_max.transpose()
-    df_max.columns.name = ''
 
     # cumulated
-    cum = df.groupby(pd.Grouper(freq='D'))
-    if nice_col_names['so'] in df.columns:
-        df[nice_col_names['ssd_cum']] = cum[nice_col_names['so']].cumsum()
-    if nice_col_names['rr'] in df.columns:
-        df[nice_col_names['rr_cum']] = cum[nice_col_names['rm']].cumsum()
+    group = df.groupby(pd.Grouper(freq='D'))
+    if 'so' in df.columns:
+        df['ssd_cum'] = group['so'].cumsum()/60
+    if 'rr' in df.columns:
+        df['rr_cum'] = group['rm'].cumsum()
     df_cum = df.resample('1D').max()
-    df_cum = df_cum.filter(like='Cumulated')
-    df_cum = df_cum.transpose()
-    df_cum.columns.name = ''
-    # stats
-    stats = pd.concat([df_mean, df_min, df_max, df_cum], keys=['mean', 'min', 'max','cum'])
+    df_cum = df_cum.filter(like='cum')
+
+    # vars with max, mean, min statistics
+    varlist = ['tl', 'tp', 'rf', 'p', 'ff']
+    vars = []
+    for i in varlist:
+        if i in df.columns: vars.append(i)
+
+    stat = pd.DataFrame()
+    for var in vars:
+        tmp = pd.DataFrame([df_max[var], df_min[var], df_mean[var]], index = ['max', 'min','mean'])
+        tmp = pd.concat([tmp], keys=[var])
+        stat = stat.append(tmp)
+        del tmp
+
+    # wind
+    if 'ff' in df.columns and 'dd' in df.columns:
+        # # speed
+        # var = 'ff'
+        # tmp = pd.DataFrame([df_max[var]], index = ['max'])
+        # tmp = pd.concat([tmp], keys=[var])
+        # stat = stat.append(tmp)
+        # del tmp
+        #direction
+        idx = group['ff'].transform(max) == df['ff'] # find wind direction, corresponding to wind max
+        ddx = df['dd'][idx].resample('1D').first() # when ffmax occurs several times, take first ddx
+        tmp = pd.DataFrame([ddx], index = [''])
+        tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed max'])
+        stat = stat.append(tmp)
+        del tmp
+
+    # cumulated vars: sunshine and precipitation
+    varlist = ['ssd_cum', 'rr_cum']
+    vars = []
+    for i in varlist:
+        if i in df_cum.columns: vars.append(i)
+
+    for var in vars:
+        tmp = pd.DataFrame([df_cum[var]], index = [''])
+        tmp = pd.concat([tmp], keys=[var])
+        stat = stat.append(tmp)
+        del tmp
+
+    # # sunshine duration
+    # var = 'ssd_cum'
+    # if var in df_cum.columns:
+    #     tmp = pd.DataFrame([df_cum[var]], index = [''])
+    #     tmp = pd.concat([tmp], keys=[var])
+    #     stat = stat.append(tmp)
+    #     del tmp
+    #
+    # # precipitation
+    # var = 'rr'
+    # if var in df.columns:
+    #     tmp = pd.DataFrame([df_cum[var+'_cum'], df_max[var]], index = ['cum', 'max'])
+    #     tmp = pd.concat([tmp], keys=[var])
+    #     stat = stat.append(tmp)
+    #     del tmp
+
+    stats = stat.rename(index=nice_col_names)
     stats.columns = stats.columns.strftime(' %d %b ')
     return stats, cur_val
 
