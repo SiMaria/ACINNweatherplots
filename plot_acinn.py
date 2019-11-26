@@ -131,9 +131,10 @@ def set_font_style_axis(p):
     p.yaxis.major_label_text_font_size = font_size_ticker
     p.yaxis.major_label_text_font_size = font_size_ticker
     p.yaxis.axis_label_text_font_style = "normal"
+    p.xaxis.axis_label_text_font_style = "normal"
     p.xaxis.formatter=DatetimeTickFormatter(
             hours=['%H:%M'],
-            days=["%b %d %Y"],)
+            days=["%d %b %Y"],)
     p.toolbar.active_scroll = p.select_one(WheelZoomTool)
     return p
 
@@ -185,7 +186,7 @@ def upper_plot(df):
 
 
     hover_p1 = p1.select(dict(type=HoverTool))
-    hover_p1.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"),
+    hover_p1.tooltips = [("Timestamp", "@time{%d %b %Y %H:%M} UTC"),
                          ('Temperature', "@tl{f0.0} °C")]#
 
     # sunshine duration
@@ -279,7 +280,7 @@ def upper_plot(df):
 ##### Plot 2
 def lower_plot(df, p1):
     p2_tools = 'box_zoom,pan,save,hover,reset,xwheel_zoom'
-    p2 = figure(width = fwidth, height = fhgt,x_axis_type="datetime",
+    p2 = figure(width = fwidth, height = fhgt+100,x_axis_type="datetime",
                 tools=p2_tools, x_range=p1.x_range);
 
     p2.min_border_top = fborder
@@ -303,6 +304,8 @@ def lower_plot(df, p1):
     p2.yaxis[0].axis_label = 'Pressure (hPa)'
     p2.yaxis[1].axis_label = 'Wind direction (°)'
     p2.yaxis[2].axis_label = 'Wind speed (m s⁻¹)'
+    p2.xaxis[0].axis_label = 'Time (UTC)'
+
     p2.yaxis[1].axis_label_text_font_size = font_size_label
     p2.yaxis[1].major_label_text_font_size = font_size_ticker
     p2.yaxis[2].axis_label_text_font_size = font_size_label
