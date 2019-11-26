@@ -142,8 +142,18 @@ def get_stats(df):
     '''
     make datatable with statistics
     '''
-    if 'rr_cum' in df.columns:
-        df = df.drop(columns='rr_cum')
+
+    # current values
+    cur_val = pd.DataFrame(df.iloc[-1])
+    sortby = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr_cum']
+    for i in sortby:
+        if i not in cur_val.index: sortby.remove(i)
+    cur_val = cur_val.reindex(sortby)
+    cur_val = cur_val.rename(index=nice_col_names)
+    cur_val
+
+    #if 'rr_cum' in df.columns:
+#        df = df.drop(columns='rr_cum')
     # mean
     df = df.rename(columns=nice_col_names)
     df_mean = df.resample('1D').mean()
@@ -157,8 +167,7 @@ def get_stats(df):
     df_max = df.resample('1D').max()
     df_max = df_max.transpose()
     df_max.columns.name = ''
-    # current value
-    cur_val = pd.DataFrame(df.iloc[-1])
+
     # cumulated
     cum = df.groupby(pd.Grouper(freq='D'))
     if nice_col_names['so'] in df.columns:
