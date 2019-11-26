@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 from bokeh.plotting import figure
-from bokeh.models import LinearAxis, Range1d, WheelZoomTool
+from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker
 from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.layouts import layout, column
@@ -295,7 +295,7 @@ def lower_plot(df, p1):
     p2.extra_y_ranges = {"winddir": Range1d(start=0, end=360),
                          "windspd": Range1d(start=0, end=df['ff'].max()+df['ff'].max()*0.1)}
 
-    p2.add_layout(LinearAxis(y_range_name='winddir'), 'right')
+    p2.add_layout(LinearAxis(y_range_name='winddir', ticker=SingleIntervalTicker(interval=45, num_minor_ticks=3)), 'right')
     p2.add_layout(LinearAxis(y_range_name="windspd"), 'right')
     p2.circle(x='time', y='dd', source=df, line_width=4, color='black', y_range_name='winddir', legend = 'Wind Direction')
     p2.line(x='time', y='ff', source=df, line_width=4, color=ffcol, y_range_name='windspd', legend = 'Wind speed')
