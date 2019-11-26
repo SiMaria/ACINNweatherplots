@@ -280,7 +280,7 @@ def upper_plot(df):
 ##### Plot 2
 def lower_plot(df, p1):
     p2_tools = 'box_zoom,pan,save,hover,reset,xwheel_zoom'
-    p2 = figure(width = fwidth, height = fhgt+100,x_axis_type="datetime",
+    p2 = figure(width = fwidth, height = fhgt+35,x_axis_type="datetime",
                 tools=p2_tools, x_range=p1.x_range);
 
     p2.min_border_top = fborder
@@ -323,7 +323,7 @@ def lower_plot(df, p1):
 
     # hover
     hover_p2 = p2.select(dict(type=HoverTool))
-    hover_p2.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"),
+    hover_p2.tooltips = [("Timestamp", "@time{%d %b %Y %H:%M} UTC"),
                          ('Pressure', '@p{f0.0} hPa'),
                          ('Winddirection', '@dd{int} deg'),
                          ('Windspeed', '@ff{f0.0} (m s⁻¹)')]
