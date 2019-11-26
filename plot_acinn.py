@@ -297,7 +297,7 @@ def lower_plot(df, p1):
 
     p2.yaxis[0].axis_label = 'Pressure (hPa)'
     p2.yaxis[1].axis_label = 'Wind direction (°)'
-    p2.yaxis[2].axis_label = 'Wind speed (ms⁻¹)'
+    p2.yaxis[2].axis_label = 'Wind speed (m s⁻¹)'
     p2.yaxis[1].axis_label_text_font_size = font_size_label
     p2.yaxis[1].major_label_text_font_size = font_size_ticker
     p2.yaxis[2].axis_label_text_font_size = font_size_label
@@ -318,7 +318,7 @@ def lower_plot(df, p1):
     hover_p2.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"),
                          ('Pressure', '@p{f0.0} hPa'),
                          ('Winddirection', '@dd{int} deg'),
-                         ('Windspeed', '@ff{f0.0} (ms⁻¹)')]
+                         ('Windspeed', '@ff{f0.0} (m s⁻¹)')]
     hover_p2.formatters = { "time": "datetime"}
     hover_p2.mode = 'vline'
     hover_p2.renderers =[h_line] #### to fix if missing value
