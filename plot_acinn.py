@@ -145,12 +145,13 @@ def get_stats(df):
 
     # current values
     cur_val = pd.DataFrame(df.iloc[-1])
-    sortby = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr_cum']
-    for i in sortby:
-        if i not in cur_val.index: sortby.remove(i)
+    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'rr_cum']
+    sortby = []
+    for i in sortlist:
+        if i in cur_val.index: sortby.append(i)
     cur_val = cur_val.reindex(sortby)
     cur_val = cur_val.rename(index=nice_col_names)
-    cur_val
+    cur_val.columns = cur_val.columns.strftime('%d %b %Y %H:%M UTC')
 
     #if 'rr_cum' in df.columns:
 #        df = df.drop(columns='rr_cum')
