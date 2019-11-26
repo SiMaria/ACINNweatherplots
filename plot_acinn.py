@@ -124,12 +124,13 @@ def read_data(url):
         df['rr_cum'] = rr_cumday['rm'].cumsum()
     return df
 
-def set_font_sizes_axis(p):
+def set_font_style_axis(p):
     p.xaxis.axis_label_text_font_size = font_size_label
     p.yaxis.axis_label_text_font_size = font_size_label
     p.xaxis.major_label_text_font_size = font_size_ticker
     p.yaxis.major_label_text_font_size = font_size_ticker
     p.yaxis.major_label_text_font_size = font_size_ticker
+    p.yaxis.axis_label_text_font_style = "normal"
     p.xaxis.formatter=DatetimeTickFormatter(
             hours=['%H:%M'],
             days=["%b %d %Y"],)
@@ -182,7 +183,7 @@ def upper_plot(df):
     p1.min_border_top = fborder
     p1.min_border_bottom = fborder
 
-    p1 = set_font_sizes_axis(p1)
+
     hover_p1 = p1.select(dict(type=HoverTool))
     hover_p1.tooltips = [("Timestamp", "@time{%Y-%m-%d %H:%M}"),
                          ('Temperature', "@tl{f0.0} °C")]#
@@ -211,6 +212,7 @@ def upper_plot(df):
     p1.yaxis[0].minor_tick_line_color = tcol
     p1.yaxis[0].major_tick_line_color = tcol
     p1.yaxis[0].axis_line_color = tcol
+    p1.yaxis[0].axis_label_text_font_style = "normal"
 
     # dew point
     if 'tp' in df.columns:
@@ -250,6 +252,7 @@ def upper_plot(df):
         p1.yaxis[2].major_tick_line_color = pcol
         p1.yaxis[2].axis_line_color = pcol
         p1.yaxis[2].axis_label = 'Precipitation (mm)'
+
         # plot rainrate but hide it by default
         rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
                      fill_color=pcol, line_alpha=0,
@@ -266,6 +269,10 @@ def upper_plot(df):
     p1.legend.location = "top_left"
     p1.legend.click_policy="hide"
     p1.legend.label_text_font_size = font_size_legend
+
+    # font style
+    p1 = set_font_style_axis(p1)
+
     return p1
 
 
@@ -277,8 +284,6 @@ def lower_plot(df, p1):
 
     p2.min_border_top = fborder
     p2.min_border_bottom = fborder
-
-    p2 = set_font_sizes_axis(p2)
 
     # pressure
     h_line = p2.line(x='time', y='p', source=df, line_width=4, color=pcol, legend = 'Pressure')
@@ -327,6 +332,10 @@ def lower_plot(df, p1):
     p2.legend.location = "top_left"
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
+
+    # font style
+    p2 = set_font_style_axis(p2)
+
     return p2
 
 # filling url column
@@ -337,7 +346,6 @@ for station in stations.index:
 
 # calculating x and y positions
 [stations['x'], stations['y']] = merc(stations['lat'], stations['lon'])
-
 
 #### Mapplot
 tile_options = {}
