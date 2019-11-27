@@ -157,7 +157,7 @@ def get_stats(df):
         if i in cur_val.index: sortby.append(i)
     cur_val = cur_val.reindex(sortby)
     cur_val = cur_val.rename(index=nice_col_names)
-
+    cur_val.columns = cur_val.columns.strftime('%d %b %Y %H:%M UTC')
     # mean, min and max
     df_mean = df.resample('1D').mean()
     df_min = df.resample('1D').min()
@@ -326,7 +326,7 @@ def upper_plot(df):
     hover_p1.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p1.legend.location = (-50, 15)#"top_left"
+    p1.legend.location = (-55, 12)#"top_left"
     p1.legend.orientation = 'horizontal'
     p1.legend.click_policy="hide"
     p1.legend.label_text_font_size = font_size_legend
@@ -393,7 +393,7 @@ def lower_plot(df, p1):
     hover_p2.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p2.legend.location = (-50, 15)#"top_left"
+    p2.legend.location = (-55, 12)#"top_left"
     p2.legend.orientation = 'horizontal'
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
