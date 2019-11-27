@@ -326,7 +326,7 @@ def upper_plot(df):
     hover_p1.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p1.legend.location = (-55, 12)#"top_left"
+    p1.legend.location = (-40, 15) # above plot
     p1.legend.orientation = 'horizontal'
     p1.legend.click_policy="hide"
     p1.legend.label_text_font_size = font_size_legend
@@ -393,7 +393,7 @@ def lower_plot(df, p1):
     hover_p2.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p2.legend.location = (-55, 12)#"top_left"
+    p2.legend.location = (-40, 15) # above plot
     p2.legend.orientation = 'horizontal'
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
