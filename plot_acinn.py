@@ -158,6 +158,7 @@ def get_stats(df):
     cur_val = cur_val.reindex(sortby)
     cur_val = cur_val.rename(index=nice_col_names)
     cur_val.columns = cur_val.columns.strftime('%d %b %Y %H:%M UTC')
+
     # mean, min and max
     df_mean = df.resample('1D').mean()
     df_min = df.resample('1D').min()
@@ -193,11 +194,17 @@ def get_stats(df):
         # tmp = pd.concat([tmp], keys=[var])
         # stat = stat.append(tmp)
         # del tmp
-        #direction
+        #direction at wind max
         idx = group['ff'].transform(max) == df['ff'] # find wind direction, corresponding to wind max
         ddx = df['dd'][idx].resample('1D').first() # when ffmax occurs several times, take first ddx
         tmp = pd.DataFrame([ddx], index = [''])
         tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed max'])
+        stat = stat.append(tmp)
+        # direction at wind min
+        idx = group['ff'].transform(min) == df['ff'] # find wind direction, corresponding to wind max
+        ddx = df['dd'][idx].resample('1D').first() # when ffmax occurs several times, take first ddx
+        tmp = pd.DataFrame([ddx], index = [''])
+        tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed min'])
         stat = stat.append(tmp)
         del tmp
 
@@ -444,7 +451,8 @@ map_plot.yaxis[0].major_label_text_font_size = font_size_ticker
 map_plot.xaxis[0].axis_label_text_font_size = font_size_label
 map_plot.xaxis[0].major_label_text_font_size = font_size_ticker
 map_plot.toolbar.active_scroll = map_plot.select_one(WheelZoomTool)
-
+map_plot.xaxis.axis_label_text_font_style = "normal"
+map_plot.yaxis.axis_label_text_font_style = "normal"
 ####### generating plots for the stations
 p1 = {}
 p2 = {}
