@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 from bokeh.plotting import figure
-from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker
+from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker, ZoomInTool, ZoomOutTool
 from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
 from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
@@ -233,11 +233,24 @@ def get_stats(df):
 
 ##### Plot 1
 def upper_plot(df):
-    p1_tools = 'box_zoom, pan, save, hover, reset, xwheel_zoom' # zoom bounds auto?
+    # configure wheelzoom tool and in and out zoom
+    wz = WheelZoomTool()
+    wz.maintain_focus = False
+    wz.dimensions = 'width'
+    wz.zoom_on_axis = True
+    
+    zi = ZoomInTool()
+    zi.dimensions = 'width'
+    zi.factor = 0.3
+    zo = ZoomOutTool()
+    zo.dimensions = 'width'
+    zo.factor = 0.3
+        
+    p1_tools = 'box_zoom, pan, hover, reset'#, xwheel_zoom' # zoom bounds auto?
     p1 = figure(width = fwidth, height = fhgt, x_axis_type="datetime",
                 tools=p1_tools,
                 x_range=(pd.to_datetime(df.index[-1])-timedelta(days=1), pd.to_datetime(df.index[-1])));
-
+    p1.add_tools(wz, zi, zo)
     p1.min_border_top = fborder
     p1.min_border_bottom = fborder
 
@@ -338,16 +351,30 @@ def upper_plot(df):
 
     # font style
     p1 = set_font_style_axis(p1)
-
+    
+    #set boarders for zoom
+    p1.x_range.max_interval = timedelta(7.5)
     return p1
 
 
 ##### Plot 2
 def lower_plot(df, p1):
-    p2_tools = 'box_zoom,pan,save,hover,reset,xwheel_zoom'
+    # configure wheelzoom tool and in and out zoom
+    wz = WheelZoomTool()
+    wz.maintain_focus = False
+    wz.dimensions = 'width'
+    wz.zoom_on_axis = True
+    
+    zi = ZoomInTool()
+    zi.dimensions = 'width'
+    zi.factor = 0.3
+    zo = ZoomOutTool()
+    zo.dimensions = 'width'
+    zo.factor = 0.3
+    p2_tools = 'box_zoom,pan,hover,reset'
     p2 = figure(width = fwidth, height = fhgt+35,x_axis_type="datetime",
                 tools=p2_tools, x_range=p1.x_range);
-
+    p2.add_tools(wz, zi, zo)
     p2.min_border_top = fborder
     p2.min_border_bottom = fborder
 
@@ -406,6 +433,8 @@ def lower_plot(df, p1):
     # font style
     p2 = set_font_style_axis(p2)
 
+    #set boarders for zoom
+    p2.x_range.max_interval = timedelta(7.5)
     return p2
 
 # filling url column
