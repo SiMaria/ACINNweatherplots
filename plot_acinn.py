@@ -3,9 +3,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 from bokeh.plotting import figure
-from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker
-from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource, Legend, LegendItem
-from bokeh.tile_providers import get_provider, Vendors
+from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker, ZoomInTool, ZoomOutTool
+from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
 from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs, Div
@@ -124,10 +123,9 @@ def read_data(url):
         df['rr_cum'] = rr_cumday['rm'].cumsum()
     # calculate cumulative sunshine duration
     if 'so' in df.columns:
-        df[df['so'] < 0] = np.nan # missing value = -599.4000000000001???
+        df[df['so'] < 0] = np.nan 
         ssd_cumday = df.groupby(pd.Grouper(freq='D'))
         df['ssd_cum'] = ssd_cumday['so'].cumsum()/60
-
     return df
 
 def set_font_style_axis(p):
@@ -242,11 +240,19 @@ def get_stats(df):
 
 ##### Plot 1
 def upper_plot(df):
-    p1_tools = 'box_zoom, pan, save, hover, reset, xwheel_zoom' # zoom bounds auto?
+    # configure wheelzoom tool 
+    wz = WheelZoomTool()
+    wz.maintain_focus = False
+    wz.dimensions = 'width'
+    wz.zoom_on_axis = True
+        
+    p1_tools = 'box_zoom,pan,save, hover, reset'#, xwheel_zoom' # zoom bounds auto?
     p1 = figure(width = fwidth, height = fhgt, x_axis_type="datetime",
-                tools=p1_tools,
-                x_range=(pd.to_datetime(df.index[-1])-timedelta(days=1), pd.to_datetime(df.index[-1])));
-
+                tools=p1_tools)
+    #            x_range=(pd.to_datetime(df.index[-1])-timedelta(days=1), pd.to_datetime(df.index[-1])));
+    p1.x_range = Range1d(start=df.index[-1]-timedelta(days=1), end=df.index[-1],
+                         bounds=(df.index[0],df.index[-1]))
+    p1.add_tools(wz)
     p1.min_border_top = fborder
     p1.min_border_bottom = fborder
 
@@ -256,12 +262,17 @@ def upper_plot(df):
                          ('Temperature', "@tl{f0.0} °C")]#
 
     # sunshine duration
-    if 'so' in df.columns:
-        p1.extra_y_ranges = {'ssd': Range1d(start=0, end=10)}
-        p1.add_layout(LinearAxis(y_range_name='ssd'), 'right')
-        p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color=socol,
-                line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name='ssd', legend = 'Sunshine duration')
-        p1.yaxis[1].axis_label = 'Sunshine duration (min)'
+    if 'ssd_cum' in df.columns:
+        #p1.extra_y_ranges = {'ssd': Range1d(start=0, df['ssd_cum'].max() + df['ssd_cum'].max()*0.1)}
+        if df['ssd_cum'].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges['ssd_cum'] = Range1d(start=0, end=(df['ssd_cum'].max() + df['ssd_cum'].max()*0.1))
+        else:
+            p1.extra_y_ranges['ssd_cum'] = Range1d(start=0, end=10)
+        p1.add_layout(LinearAxis(y_range_name='ssd_cum'), 'right')
+        #p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color=socol,
+        #        line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name='ssd', legend = 'Sunshine duration')
+        p1.line(x='time', y='ssd_cum', source=df, line_width=4, color=socol, y_range_name='ssd_cum', legend = 'Sunshine duration (24h)')
+        p1.yaxis[1].axis_label = 'Sunshine duration (h)'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
         p1.yaxis[1].major_label_text_font_size = font_size_ticker
         p1.yaxis[1].major_label_text_color = socol
@@ -270,6 +281,7 @@ def upper_plot(df):
         p1.yaxis[1].major_tick_line_color = socol
         p1.yaxis[1].axis_line_color = socol
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
+        hover_p1[0].tooltips.append(('Cumulated Sunshine duration', '@ssd_cum{f0.0} h'))
 
     # temperature
     h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
@@ -333,7 +345,7 @@ def upper_plot(df):
     hover_p1.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p1.legend.location = (-55, 12)#"top_left"
+    p1.legend.location = (-40, 15) # above plot
     p1.legend.orientation = 'horizontal'
     p1.legend.click_policy="hide"
     p1.legend.label_text_font_size = font_size_legend
@@ -341,16 +353,22 @@ def upper_plot(df):
 
     # font style
     p1 = set_font_style_axis(p1)
-
+    
     return p1
 
 
 ##### Plot 2
 def lower_plot(df, p1):
-    p2_tools = 'box_zoom,pan,save,hover,reset,xwheel_zoom'
+    # configure wheelzoom tool
+    wz = WheelZoomTool()
+    wz.maintain_focus = False
+    wz.dimensions = 'width'
+    wz.zoom_on_axis = True
+    
+    p2_tools = 'box_zoom,pan,save, hover, reset'
     p2 = figure(width = fwidth, height = fhgt+35,x_axis_type="datetime",
                 tools=p2_tools, x_range=p1.x_range);
-
+    p2.add_tools(wz)
     p2.min_border_top = fborder
     p2.min_border_bottom = fborder
 
@@ -400,7 +418,7 @@ def lower_plot(df, p1):
     hover_p2.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p2.legend.location = (-55, 12)#"top_left"
+    p2.legend.location = (-40, 15) # above plot
     p2.legend.orientation = 'horizontal'
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
@@ -409,6 +427,8 @@ def lower_plot(df, p1):
     # font style
     p2 = set_font_style_axis(p2)
 
+    #set boarders for zoom
+    p2.x_range.max_interval = timedelta(7.5)
     return p2
 
 # filling url column
