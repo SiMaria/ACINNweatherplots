@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker
-from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
+from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource, Legend, LegendItem
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
@@ -16,7 +16,7 @@ output_file("acinn_weather_plot.html")
 base_url = 'http://meteo145.uibk.ac.at/'
 time = str(7)
 fwidth = 800
-fhgt = 325
+fhgt = 350
 fborder = 25
 font_size_label = "19pt"
 font_size_ticker = "14pt"
@@ -284,7 +284,7 @@ def upper_plot(df):
         p1.y_range=Range1d(df['tl'].min()-2, df['tl'].max()+2)
         p1.extra_y_ranges = {'rf': Range1d(start=0, end=100)}
         p1.add_layout(LinearAxis(y_range_name='rf'), 'right')
-        p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'relative humidity', y_range_name='rf')
+        p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'Relative Humidity', y_range_name='rf')
         p1.yaxis[1].axis_label = 'Relative humidity (%)'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
         p1.yaxis[1].major_label_text_font_size = font_size_ticker
@@ -326,9 +326,11 @@ def upper_plot(df):
     hover_p1.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p1.legend.location = "top_left"
+    p1.legend.location = (-50, 15)#"top_left"
+    p1.legend.orientation = 'horizontal'
     p1.legend.click_policy="hide"
     p1.legend.label_text_font_size = font_size_legend
+    p1.add_layout(p1.legend[0],'above')
 
     # font style
     p1 = set_font_style_axis(p1)
@@ -391,9 +393,11 @@ def lower_plot(df, p1):
     hover_p2.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p2.legend.location = "top_left"
+    p2.legend.location = (-50, 15)#"top_left"
+    p2.legend.orientation = 'horizontal'
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
+    p2.add_layout(p2.legend[0],'above')
 
     # font style
     p2 = set_font_style_axis(p2)
