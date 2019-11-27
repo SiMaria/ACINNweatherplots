@@ -4,8 +4,7 @@ from datetime import datetime, timedelta
 
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker
-from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource, Legend, LegendItem
-from bokeh.tile_providers import get_provider, Vendors
+from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
 from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs, Div
@@ -124,10 +123,9 @@ def read_data(url):
         df['rr_cum'] = rr_cumday['rm'].cumsum()
     # calculate cumulative sunshine duration
     if 'so' in df.columns:
-        df[df['so'] < 0] = np.nan # missing value = -599.4000000000001???
+        df[df['so'] < 0] = np.nan 
         ssd_cumday = df.groupby(pd.Grouper(freq='D'))
         df['ssd_cum'] = ssd_cumday['so'].cumsum()/60
-
     return df
 
 def set_font_style_axis(p):
@@ -249,12 +247,17 @@ def upper_plot(df):
                          ('Temperature', "@tl{f0.0} °C")]#
 
     # sunshine duration
-    if 'so' in df.columns:
-        p1.extra_y_ranges = {'ssd': Range1d(start=0, end=10)}
-        p1.add_layout(LinearAxis(y_range_name='ssd'), 'right')
-        p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color=socol,
-                line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name='ssd', legend = 'Sunshine duration')
-        p1.yaxis[1].axis_label = 'Sunshine duration (min)'
+    if 'ssd_cum' in df.columns:
+        #p1.extra_y_ranges = {'ssd': Range1d(start=0, df['ssd_cum'].max() + df['ssd_cum'].max()*0.1)}
+        if df['ssd_cum'].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges['ssd_cum'] = Range1d(start=0, end=(df['ssd_cum'].max() + df['ssd_cum'].max()*0.1))
+        else:
+            p1.extra_y_ranges['ssd_cum'] = Range1d(start=0, end=10)
+        p1.add_layout(LinearAxis(y_range_name='ssd_cum'), 'right')
+        #p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color=socol,
+        #        line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name='ssd', legend = 'Sunshine duration')
+        p1.line(x='time', y='ssd_cum', source=df, line_width=4, color=socol, y_range_name='ssd_cum', legend = 'Sunshine duration (24h)')
+        p1.yaxis[1].axis_label = 'Sunshine duration (h)'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
         p1.yaxis[1].major_label_text_font_size = font_size_ticker
         p1.yaxis[1].major_label_text_color = socol
@@ -263,6 +266,7 @@ def upper_plot(df):
         p1.yaxis[1].major_tick_line_color = socol
         p1.yaxis[1].axis_line_color = socol
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
+        hover_p1[0].tooltips.append(('Cumulated Sunshine duration', '@ssd_cum{f0.0} h'))
 
     # temperature
     h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
