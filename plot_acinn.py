@@ -33,8 +33,8 @@ nice_col_names = {
     'ff' : 'Wind speed (m s⁻¹)',
     'p' : 'Pressure (hPa)',
     'rr' : 'Precipitation rate (mm h⁻¹)',
-    'rm' : 'Precipitation (mm per 10 min)',
-    'so' : 'Sunshine duration (min per 10 min)',
+    'rm' : 'Precipitation (mm in 10 min)',
+    'so' : 'Sunshine duration (min in 10 min)',
     'tl' : 'Temperature (°C)',
     'tp' : 'Dewpoint (°C)',
     'rf' : 'Relative humidity (%)',
@@ -90,7 +90,7 @@ def get_width():
     '''
     mindate = min(df.index)
     maxdate = max(df.index)
-    return 0.8 * (maxdate-mindate).total_seconds()*1000 / len(df.index)
+    return 0.9 * (maxdate-mindate).total_seconds()*1000 / len(df.index)
 
 def merc(lat, lon):
     """
@@ -121,6 +121,8 @@ def read_data(url):
         df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
         rr_cumday = df.groupby(pd.Grouper(freq='D'))
         df['rr_cum'] = rr_cumday['rm'].cumsum()
+        df['rr3h'] = df['rm'].resample(rule='3H', base=0, loffset = '1.5H').sum()
+        df['rr3h'][df['rr3h']>0]
     # calculate cumulative sunshine duration
     if 'so' in df.columns:
         df[df['so'] < 0] = np.nan
@@ -147,16 +149,6 @@ def get_stats(df):
     make datatable with statistics
     '''
 
-    # current values
-    cur_val = pd.DataFrame(df.iloc[-1])
-    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'ssd_cum', 'rr_cum']
-    sortby = []
-    for i in sortlist:
-        if i in cur_val.index: sortby.append(i)
-    cur_val = cur_val.reindex(sortby)
-    cur_val = cur_val.rename(index=nice_col_names)
-    cur_val.columns = cur_val.columns.strftime('%d %b %Y %H:%M UTC')
-
     # mean, min and max
     df_mean = df.resample('1D').mean()
     df_min = df.resample('1D').min()
@@ -170,6 +162,16 @@ def get_stats(df):
         df['rr_cum'] = group['rm'].cumsum()
     df_cum = df.resample('1D').max()
     df_cum = df_cum.filter(like='cum')
+
+    # current values
+    cur_val = pd.DataFrame(df.iloc[-1])
+    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'ssd_cum', 'rr_cum']
+    sortby = []
+    for i in sortlist:
+        if i in cur_val.index: sortby.append(i)
+    cur_val = cur_val.reindex(sortby)
+    cur_val = cur_val.rename(index=nice_col_names)
+    cur_val.columns = cur_val.columns.strftime('%d %b %Y %H:%M UTC')
 
     # vars with max, mean, min statistics
     varlist = ['tl', 'tp', 'rf', 'p', 'ff']
@@ -312,15 +314,19 @@ def upper_plot(df):
         p1.yaxis[1].axis_line_color = hcol
         hover_p1[0].tooltips.append(('Relative Humidity', '@rf{f0.0} %'))
 
-    # precipitation (daily accumulated)
-    if 'rr_cum' in df.columns:
-        if df['rr_cum'].sum() > 0: #axis would disappear when there was no rain measured
-            p1.extra_y_ranges['rr_cum'] = Range1d(start=0, end=(df['rr_cum'].max() + df['rr_cum'].max()*0.1))
+    # precipitation (3 h sums)
+    if 'rr3h' in df.columns:
+        if df['rr3h'].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges['rr3h'] = Range1d(start=0, end=(df['rr_cum'].max() + df['rr_cum'].max()*0.1))
         else:
-            p1.extra_y_ranges['rr_cum'] = Range1d(start=0, end=10)
-        p1.add_layout(LinearAxis(y_range_name='rr_cum'), 'right')
-        p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Cumulated precipitation (24 h)')
-        hover_p1[0].tooltips.append(('Cumulated precipitation', '@rr_cum{f0.0} mm'))
+            p1.extra_y_ranges['rr3h'] = Range1d(start=0, end=10)
+        p1.add_layout(LinearAxis(y_range_name='rr3h'), 'right')
+        p1.vbar(top='rr3h', x='time', source=df, width=get_width()*6*3,
+                     fill_color=pcol, line_alpha=0,
+                     line_width=0, fill_alpha=0.5,
+                     legend = 'Precipitation',  y_range_name='rr3h')
+
+        hover_p1[0].tooltips.append(('Precipitation', '@rr_cum{f0.0} mm in 3 h'))
         p1.yaxis[2].major_label_text_color = pcol
         p1.yaxis[2].axis_label_text_color = pcol
         p1.yaxis[2].minor_tick_line_color = pcol
@@ -328,12 +334,12 @@ def upper_plot(df):
         p1.yaxis[2].axis_line_color = pcol
         p1.yaxis[2].axis_label = 'Precipitation (mm)'
 
-        # plot rainrate but hide it by default
-        rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
-                     fill_color=pcol, line_alpha=0,
-                     line_width=0, fill_alpha=0.5,
-                     legend = 'Precipitation rate',  y_range_name='rr_cum')
-        rr.visible = False
+        # # plot rainrate but hide it by default
+        # rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
+        #              fill_color=pcol, line_alpha=0,
+        #              line_width=0, fill_alpha=0.5,
+        #              legend = 'Precipitation rate',  y_range_name='rr_cum')
+        # rr.visible = False
 
     # hover
     hover_p1.formatters = { "time": "datetime"}
@@ -341,7 +347,7 @@ def upper_plot(df):
     hover_p1.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p1.legend.location = (-40, 15) # above plot
+    p1.legend.location = (0, 15) # above plot
     p1.legend.orientation = 'horizontal'
     p1.legend.click_policy="hide"
     p1.legend.label_text_font_size = font_size_legend
@@ -410,7 +416,7 @@ def lower_plot(df, p1):
     hover_p2.renderers =[h_line] #### to fix if missing value
 
     # legend
-    p2.legend.location = (-40, 15) # above plot
+    p2.legend.location = (0, 15) # above plot
     p2.legend.orientation = 'horizontal'
     p2.legend.click_policy="hide"
     p2.legend.label_text_font_size = font_size_legend
