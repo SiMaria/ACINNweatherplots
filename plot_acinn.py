@@ -123,7 +123,7 @@ def read_data(url):
         df['rr_cum'] = rr_cumday['rm'].cumsum()
     # calculate cumulative sunshine duration
     if 'so' in df.columns:
-        df[df['so'] < 0] = np.nan 
+        df[df['so'] < 0] = np.nan
         ssd_cumday = df.groupby(pd.Grouper(freq='D'))
         df['ssd_cum'] = ssd_cumday['so'].cumsum()/60
     return df
@@ -240,12 +240,12 @@ def get_stats(df):
 
 ##### Plot 1
 def upper_plot(df):
-    # configure wheelzoom tool 
+    # configure wheelzoom tool
     wz = WheelZoomTool()
     wz.maintain_focus = False
     wz.dimensions = 'width'
     wz.zoom_on_axis = True
-        
+
     p1_tools = 'box_zoom,pan,save, hover, reset'#, xwheel_zoom' # zoom bounds auto?
     p1 = figure(width = fwidth, height = fhgt, x_axis_type="datetime",
                 tools=p1_tools)
@@ -274,7 +274,7 @@ def upper_plot(df):
         p1.line(x='time', y='ssd_cum', source=df, line_width=4, color=socol, y_range_name='ssd_cum', legend = 'Sunshine duration (24h)')
         p1.yaxis[1].axis_label = 'Sunshine duration (h)'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
-        p1.yaxis[1].major_label_text_font_size = font_size_ticker
+
         p1.yaxis[1].major_label_text_color = socol
         p1.yaxis[1].axis_label_text_color = socol
         p1.yaxis[1].minor_tick_line_color = socol
@@ -305,8 +305,6 @@ def upper_plot(df):
         p1.add_layout(LinearAxis(y_range_name='rf'), 'right')
         p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'Relative Humidity', y_range_name='rf')
         p1.yaxis[1].axis_label = 'Relative humidity (%)'
-        p1.yaxis[1].axis_label_text_font_size = font_size_label
-        p1.yaxis[1].major_label_text_font_size = font_size_ticker
         p1.yaxis[1].major_label_text_color = hcol
         p1.yaxis[1].axis_label_text_color = hcol
         p1.yaxis[1].minor_tick_line_color = hcol
@@ -323,8 +321,6 @@ def upper_plot(df):
         p1.add_layout(LinearAxis(y_range_name='rr_cum'), 'right')
         p1.line(x='time', y='rr_cum', source=df, line_width=4, color=pcol, y_range_name='rr_cum', legend = 'Cumulated precipitation (24 h)')
         hover_p1[0].tooltips.append(('Cumulated precipitation', '@rr_cum{f0.0} mm'))
-        p1.yaxis[2].axis_label_text_font_size = font_size_label
-        p1.yaxis[2].major_label_text_font_size = font_size_ticker
         p1.yaxis[2].major_label_text_color = pcol
         p1.yaxis[2].axis_label_text_color = pcol
         p1.yaxis[2].minor_tick_line_color = pcol
@@ -353,7 +349,7 @@ def upper_plot(df):
 
     # font style
     p1 = set_font_style_axis(p1)
-    
+
     return p1
 
 
@@ -364,7 +360,7 @@ def lower_plot(df, p1):
     wz.maintain_focus = False
     wz.dimensions = 'width'
     wz.zoom_on_axis = True
-    
+
     p2_tools = 'box_zoom,pan,save, hover, reset'
     p2 = figure(width = fwidth, height = fhgt+35,x_axis_type="datetime",
                 tools=p2_tools, x_range=p1.x_range);
@@ -392,10 +388,6 @@ def lower_plot(df, p1):
     p2.yaxis[2].axis_label = 'Wind speed (m s⁻¹)'
     p2.xaxis[0].axis_label = 'Time (UTC)'
 
-    p2.yaxis[1].axis_label_text_font_size = font_size_label
-    p2.yaxis[1].major_label_text_font_size = font_size_ticker
-    p2.yaxis[2].axis_label_text_font_size = font_size_label
-    p2.yaxis[2].major_label_text_font_size = font_size_ticker
     p2.yaxis[2].major_label_text_color = ffcol
     p2.yaxis[2].axis_label_text_color = ffcol
     p2.yaxis[2].minor_tick_line_color = ffcol
@@ -466,10 +458,6 @@ hover_map.tooltips = [("Station", "@cap_station"), # todo capitalize!!!!
 hover_map.mode = 'mouse'
 map_plot.yaxis[0].axis_label = 'Latitude (°)'
 map_plot.xaxis[0].axis_label = 'Longitude (°)'
-map_plot.yaxis[0].axis_label_text_font_size = font_size_label
-map_plot.yaxis[0].major_label_text_font_size = font_size_ticker
-map_plot.xaxis[0].axis_label_text_font_size = font_size_label
-map_plot.xaxis[0].major_label_text_font_size = font_size_ticker
 map_plot.toolbar.active_scroll = map_plot.select_one(WheelZoomTool)
 map_plot.xaxis.axis_label_text_font_style = "normal"
 map_plot.yaxis.axis_label_text_font_style = "normal"
