@@ -27,6 +27,8 @@ hcol =  'seagreen' #'#029e73'
 tcol = 'firebrick'
 socol = 'orange'
 
+# plot sunshine duration cumulated (ssdcum = True) or as 10 min values
+ssdcum = False
 
 nice_col_names = {
     'dd' : 'Wind direction (deg)',
@@ -42,7 +44,7 @@ nice_col_names = {
     'ssd_cum' : 'Cumulated sunshine duration (h)',
 }
 #447.167300, 11.457867
-# If station selection changes, change this dataframe
+# When station selection changes, change this dataframe
 stations = pd.DataFrame({'lat':[47.260, 47.011, 46.867, 47.187],
                         'lon':[11.384, 11.479, 11.024, 11.429],
                         'height':[578, 2107, 1942, 1080],
@@ -86,7 +88,7 @@ table.dataframe th {
 
 def get_width():
     '''
-    Get vbar with for sunshine duration plot
+    Get vbar width for sunshine duration plot
     '''
     mindate = min(df.index)
     maxdate = max(df.index)
@@ -112,18 +114,19 @@ def read_data(url):
     df['time'] = [datetime(1970, 1, 1) + timedelta(milliseconds=ds) for ds in df['datumsec']]
     df = df.set_index('time')
     df = df.drop(columns='datumsec')
+
     # kick out missing values
     for col in df.columns:
         df[df[col] == -99.9] = np.nan
-    # calculate cumulative rainsum
+
+    # calculate 3h rainsum and cumulated rain/ sunshine duration
     if 'rr' in df.columns:
         df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
         df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
         rr_cumday = df.groupby(pd.Grouper(freq='D'))
         df['rr_cum'] = rr_cumday['rm'].cumsum()
-        df['rr3h'] = df['rm'].resample(rule='3H', base=0, loffset = '1.5H').sum()
-        df['rr3h'][df['rr3h']>0]
-    # calculate cumulative sunshine duration
+        df['rr3h'] = df['rm'].resample(rule='3H', base=0, loffset = '1.5H', how='sum').sum().fillna('nearest')
+        del rr_cumday
     if 'so' in df.columns:
         df[df['so'] < 0] = np.nan
         ssd_cumday = df.groupby(pd.Grouper(freq='D'))
@@ -140,7 +143,7 @@ def set_font_style_axis(p):
     p.xaxis.axis_label_text_font_style = "normal"
     p.xaxis.formatter=DatetimeTickFormatter(
             hours=['%H:%M'],
-            days=["%d %b %Y"],)
+            days=["%d %b %Y"],)          #  days=["%d %b"],) without year
     p.toolbar.active_scroll = p.select_one(WheelZoomTool)
     return p
 
@@ -148,6 +151,8 @@ def get_stats(df):
     '''
     make datatable with statistics
     '''
+    # for daily actions
+    group = df.groupby(pd.Grouper(freq='D'))
 
     # mean, min and max
     df_mean = df.resample('1D').mean()
@@ -155,11 +160,6 @@ def get_stats(df):
     df_max = df.resample('1D').max()
 
     # cumulated
-    group = df.groupby(pd.Grouper(freq='D'))
-    if 'so' in df.columns:
-        df['ssd_cum'] = group['so'].cumsum()/60
-    if 'rr' in df.columns:
-        df['rr_cum'] = group['rm'].cumsum()
     df_cum = df.resample('1D').max()
     df_cum = df_cum.filter(like='cum')
 
@@ -186,23 +186,17 @@ def get_stats(df):
         stat = stat.append(tmp)
         del tmp
 
-    # wind
+    # wind direction
     if 'ff' in df.columns and 'dd' in df.columns:
-        # # speed
-        # var = 'ff'
-        # tmp = pd.DataFrame([df_max[var]], index = ['max'])
-        # tmp = pd.concat([tmp], keys=[var])
-        # stat = stat.append(tmp)
-        # del tmp
-        #direction at wind max
+        # direction at wind max
         idx = group['ff'].transform(max) == df['ff'] # find wind direction, corresponding to wind max
         ddx = df['dd'][idx].resample('1D').first() # when ffmax occurs several times, take first ddx
         tmp = pd.DataFrame([ddx], index = [''])
         tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed max'])
         stat = stat.append(tmp)
         # direction at wind min
-        idx = group['ff'].transform(min) == df['ff'] # find wind direction, corresponding to wind max
-        ddx = df['dd'][idx].resample('1D').first() # when ffmax occurs several times, take first ddx
+        idx = group['ff'].transform(min) == df['ff'] # find wind direction, corresponding to wind min
+        ddx = df['dd'][idx].resample('1D').first() # when ffmin occurs several times, take first ddx
         tmp = pd.DataFrame([ddx], index = [''])
         tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed min'])
         stat = stat.append(tmp)
@@ -220,22 +214,6 @@ def get_stats(df):
         stat = stat.append(tmp)
         del tmp
 
-    # # sunshine duration
-    # var = 'ssd_cum'
-    # if var in df_cum.columns:
-    #     tmp = pd.DataFrame([df_cum[var]], index = [''])
-    #     tmp = pd.concat([tmp], keys=[var])
-    #     stat = stat.append(tmp)
-    #     del tmp
-    #
-    # # precipitation
-    # var = 'rr'
-    # if var in df.columns:
-    #     tmp = pd.DataFrame([df_cum[var+'_cum'], df_max[var]], index = ['cum', 'max'])
-    #     tmp = pd.concat([tmp], keys=[var])
-    #     stat = stat.append(tmp)
-    #     del tmp
-
     stats = stat.rename(index=nice_col_names)
     stats.columns = stats.columns.strftime(' %d %b ')
     return stats, cur_val
@@ -251,7 +229,6 @@ def upper_plot(df):
     p1_tools = 'box_zoom,pan,save, hover, reset'#, xwheel_zoom' # zoom bounds auto?
     p1 = figure(width = fwidth, height = fhgt, x_axis_type="datetime",
                 tools=p1_tools)
-    #            x_range=(pd.to_datetime(df.index[-1])-timedelta(days=1), pd.to_datetime(df.index[-1])));
     p1.x_range = Range1d(start=df.index[-1]-timedelta(days=1), end=df.index[-1],
                          bounds=(df.index[0],df.index[-1]))
     p1.add_tools(wz)
@@ -264,17 +241,26 @@ def upper_plot(df):
                          ('Temperature', "@tl{f0.0} °C")]#
 
     # sunshine duration
-    if 'ssd_cum' in df.columns:
-        #p1.extra_y_ranges = {'ssd': Range1d(start=0, df['ssd_cum'].max() + df['ssd_cum'].max()*0.1)}
-        if df['ssd_cum'].sum() > 0: #axis would disappear when there was no rain measured
-            p1.extra_y_ranges['ssd_cum'] = Range1d(start=0, end=(df['ssd_cum'].max() + df['ssd_cum'].max()*0.1))
+    if 'so' in df.columns:
+        if ssdcum:
+            varso = 'ssd_cum' # 'ssd_cum' or 'so'
+            unitso = 'h'
         else:
-            p1.extra_y_ranges['ssd_cum'] = Range1d(start=0, end=10)
-        p1.add_layout(LinearAxis(y_range_name='ssd_cum'), 'right')
-        #p1.vbar(top='so', x='time', source=df, width=get_width(), fill_color=socol,
-        #        line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name='ssd', legend = 'Sunshine duration')
-        p1.line(x='time', y='ssd_cum', source=df, line_width=4, color=socol, y_range_name='ssd_cum', legend = 'Sunshine duration (24h)')
-        p1.yaxis[1].axis_label = 'Sunshine duration (h)'
+            varso = 'so' # 'ssd_cum' or 'so'
+            unitso = 'min'
+
+        if ssdcum and df[varso].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges[varso] = Range1d(start=0, end=(df[varso].max() + df[varso].max()*0.1))
+        else:
+            p1.extra_y_ranges[varso] = Range1d(start=0, end=10)
+        p1.add_layout(LinearAxis(y_range_name=varso), 'right')
+
+        if ssdcum:
+            p1.line(x='time', y=varso, source=df, line_width=4, color=socol, y_range_name=varso, legend = 'Sunshine duration (24h)')
+        else:
+            p1.vbar(top=varso, x='time', source=df, width=get_width(), fill_color=socol,
+                    line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name=varso, legend = 'Sunshine duration')
+        p1.yaxis[1].axis_label = 'Sunshine duration (' + unitso + ')'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
 
         p1.yaxis[1].major_label_text_color = socol
@@ -326,7 +312,7 @@ def upper_plot(df):
                      line_width=0, fill_alpha=0.5,
                      legend = 'Precipitation',  y_range_name='rr3h')
 
-        hover_p1[0].tooltips.append(('Precipitation', '@rr_cum{f0.0} mm in 3 h'))
+        hover_p1[0].tooltips.append(('Precipitation', '@rr3h{f0.0} mm in 3 h'))
         p1.yaxis[2].major_label_text_color = pcol
         p1.yaxis[2].axis_label_text_color = pcol
         p1.yaxis[2].minor_tick_line_color = pcol
