@@ -166,7 +166,7 @@ def get_stats(df):
 
     # current values
     cur_val = pd.DataFrame(df.iloc[-1])
-    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'ssd_cum', 'rr_cum']
+    sortlist = ['tl', 'tp', 'rf', 'ff', 'dd', 'p', 'rr', 'rr_cum', 'ssd_cum']
     sortby = []
     for i in sortlist:
         if i in cur_val.index: sortby.append(i)
