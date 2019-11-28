@@ -28,7 +28,7 @@ tcol = 'firebrick'
 socol = 'orange'
 
 # plot sunshine duration cumulated (ssdcum = True) or as 10 min values
-ssdcum = True
+ssdcum = False
 
 nice_col_names = {
     'dd' : 'Wind direction (deg)',
