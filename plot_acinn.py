@@ -125,7 +125,8 @@ def read_data(url):
         df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
         rr_cumday = df.groupby(pd.Grouper(freq='D'))
         df['rr_cum'] = rr_cumday['rm'].cumsum()
-        df['rr3h'] = df['rm'].resample(rule='3H', base=0, loffset = '1.5H', how='sum').sum().fillna('nearest')
+        df['rr3h'] = df['rm'].resample(rule='3H', base=0, loffset = '90min').sum()
+        df['rr3hm'] = df['rm'].resample(rule='3H', base=0).sum().resample('10min').fillna('pad') # for hover
         del rr_cumday
     if 'so' in df.columns:
         df[df['so'] < 0] = np.nan
@@ -312,20 +313,13 @@ def upper_plot(df):
                      line_width=0, fill_alpha=0.5,
                      legend = 'Precipitation',  y_range_name='rr3h')
 
-        hover_p1[0].tooltips.append(('Precipitation', '@rr3h{f0.0} mm in 3 h'))
+        hover_p1[0].tooltips.append(('Precipitation', '@rr3hm{f0.0} mm in 3 h'))
         p1.yaxis[2].major_label_text_color = pcol
         p1.yaxis[2].axis_label_text_color = pcol
         p1.yaxis[2].minor_tick_line_color = pcol
         p1.yaxis[2].major_tick_line_color = pcol
         p1.yaxis[2].axis_line_color = pcol
         p1.yaxis[2].axis_label = 'Precipitation (mm)'
-
-        # # plot rainrate but hide it by default
-        # rr = p1.vbar(top='rr', x='time', source=df, width=get_width(),
-        #              fill_color=pcol, line_alpha=0,
-        #              line_width=0, fill_alpha=0.5,
-        #              legend = 'Precipitation rate',  y_range_name='rr_cum')
-        # rr.visible = False
 
     # hover
     hover_p1.formatters = { "time": "datetime"}
