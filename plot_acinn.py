@@ -28,7 +28,7 @@ tcol = 'firebrick'
 socol = 'orange'
 
 # plot sunshine duration cumulated (ssdcum = True) or as 10 min values
-ssdcum = False
+ssdcum = True
 
 nice_col_names = {
     'dd' : 'Wind direction (deg)',
@@ -270,7 +270,7 @@ def upper_plot(df):
         p1.yaxis[1].major_tick_line_color = socol
         p1.yaxis[1].axis_line_color = socol
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
-        hover_p1[0].tooltips.append(('Cumulated Sunshine duration', '@ssd_cum{f0.0} h'))
+        hover_p1[0].tooltips.append(('Cumulated sunshine duration', '@ssd_cum{f0.0} h'))
 
     # temperature
     h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
@@ -447,6 +447,11 @@ map_plot.xaxis[0].axis_label = 'Longitude (°)'
 map_plot.toolbar.active_scroll = map_plot.select_one(WheelZoomTool)
 map_plot.xaxis.axis_label_text_font_style = "normal"
 map_plot.yaxis.axis_label_text_font_style = "normal"
+map_plot.xaxis.axis_label_text_font_size = font_size_label
+map_plot.yaxis.axis_label_text_font_size = font_size_label
+map_plot.xaxis.major_label_text_font_size = font_size_ticker
+map_plot.yaxis.major_label_text_font_size = font_size_ticker
+
 ####### generating plots for the stations
 p1 = {}
 p2 = {}
