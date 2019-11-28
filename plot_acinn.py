@@ -31,7 +31,7 @@ socol = 'orange'
 ssdcum = False
 
 nice_col_names = {
-    'dd' : 'Wind direction (deg)',
+    'dd' : 'Wind direction (°)',
     'ff' : 'Wind speed (m s⁻¹)',
     'p' : 'Pressure (hPa)',
     'rr' : 'Precipitation rate (mm h⁻¹)',
@@ -193,13 +193,13 @@ def get_stats(df):
         idx = group['ff'].transform(max) == df['ff'] # find wind direction, corresponding to wind max
         ddx = df['dd'][idx].resample('1D').first() # when ffmax occurs several times, take first ddx
         tmp = pd.DataFrame([ddx], index = [''])
-        tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed max'])
+        tmp = pd.concat([tmp], keys=['Wind direcetion (°) at speed max'])
         stat = stat.append(tmp)
         # direction at wind min
         idx = group['ff'].transform(min) == df['ff'] # find wind direction, corresponding to wind min
         ddx = df['dd'][idx].resample('1D').first() # when ffmin occurs several times, take first ddx
         tmp = pd.DataFrame([ddx], index = [''])
-        tmp = pd.concat([tmp], keys=['Wind direcetion (deg) at speed min'])
+        tmp = pd.concat([tmp], keys=['Wind direcetion (°) at speed min'])
         stat = stat.append(tmp)
         del tmp
 
@@ -389,7 +389,7 @@ def lower_plot(df, p1):
     hover_p2 = p2.select(dict(type=HoverTool))
     hover_p2.tooltips = [("Timestamp", "@time{%d %b %Y %H:%M} UTC"),
                          ('Pressure', '@p{f0.0} hPa'),
-                         ('Winddirection', '@dd{int} deg'),
+                         ('Winddirection', '@dd{int} °'),
                          ('Windspeed', '@ff{f0.0} (m s⁻¹)')]
     hover_p2.formatters = { "time": "datetime"}
     hover_p2.mode = 'vline'
