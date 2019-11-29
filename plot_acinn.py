@@ -244,38 +244,14 @@ def upper_plot(df):
     p1.min_border_top = fborder
     p1.min_border_bottom = fborder
 
-
+    # hover for temp, dew point and rel. humidity
     hover_p1 = p1.select(dict(type=HoverTool))
     hover_p1.tooltips = [("Timestamp", "@time{%d %b %Y %H:%M} UTC"),
                          ('Temperature', "@tl{f0.0} °C")]#
-
-    # temperature
-    h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
-    p1.yaxis[0].axis_label = 'Temperature (°C)'
-    p1.yaxis[0].major_label_text_color = tcol
-    p1.yaxis[0].axis_label_text_color = tcol
-    p1.yaxis[0].minor_tick_line_color = tcol
-    p1.yaxis[0].major_tick_line_color = tcol
-    p1.yaxis[0].axis_line_color = tcol
-    p1.yaxis[0].axis_label_text_font_style = "normal"
-
-    # dew point
     if 'tp' in df.columns:
-        p1.y_range=Range1d(df['tp'].min()-2, df['tl'].max()+2)
-        p1.line(x='time', y='tp', source=df, line_width=4, color=hcol, legend = 'Dewpoint')
         hover_p1[0].tooltips.append(('Dewpoint', '@tp{f0.0} °C'))
     else:
-        # relative humidity
-        p1.y_range=Range1d(df['tl'].min()-2, df['tl'].max()+2)
-        p1.extra_y_ranges = {'rf': Range1d(start=0, end=100)}
-        p1.add_layout(LinearAxis(y_range_name='rf'), 'right')
-        p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'Relative Humidity', y_range_name='rf')
-        p1.yaxis[1].axis_label = 'Relative humidity (%)'
-        p1.yaxis[1].major_label_text_color = hcol
-        p1.yaxis[1].axis_label_text_color = hcol
-        p1.yaxis[1].minor_tick_line_color = hcol
-        p1.yaxis[1].major_tick_line_color = hcol
-        p1.yaxis[1].axis_line_color = hcol
+
         hover_p1[0].tooltips.append(('Relative Humidity', '@rf{f0.0} %'))
 
     # sunshine duration
@@ -298,6 +274,7 @@ def upper_plot(df):
         else:
             p1.vbar(top=varso, x='time', source=df, width=get_width(), fill_color=socol,
                     line_alpha=0, line_width=0, fill_alpha=0.5, y_range_name=varso, legend = 'Sunshine duration')
+
         p1.yaxis[1].axis_label = 'Sunshine duration (' + unitso + ')'
         p1.yaxis[1].axis_label_text_font_size = font_size_label
 
@@ -309,6 +286,33 @@ def upper_plot(df):
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
         hover_p1[0].tooltips.append(('Cumulated sunshine duration', '@ssd_cum{f0.0} h'))
 
+    # temperature
+    h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
+    p1.yaxis[0].axis_label = 'Temperature (°C)'
+    p1.yaxis[0].major_label_text_color = tcol
+    p1.yaxis[0].axis_label_text_color = tcol
+    p1.yaxis[0].minor_tick_line_color = tcol
+    p1.yaxis[0].major_tick_line_color = tcol
+    p1.yaxis[0].axis_line_color = tcol
+    p1.yaxis[0].axis_label_text_font_style = "normal"
+
+    # dew point
+    if 'tp' in df.columns:
+        p1.y_range=Range1d(df['tp'].min()-2, df['tl'].max()+2)
+        p1.line(x='time', y='tp', source=df, line_width=4, color=hcol, legend = 'Dewpoint')
+    else:
+        # relative humidity
+        p1.y_range=Range1d(df['tl'].min()-2, df['tl'].max()+2)
+        p1.extra_y_ranges = {'rf': Range1d(start=0, end=100)}
+        p1.add_layout(LinearAxis(y_range_name='rf'), 'right')
+        p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'Relative Humidity', y_range_name='rf')
+        p1.yaxis[1].axis_label = 'Relative humidity (%)'
+        p1.yaxis[1].major_label_text_color = hcol
+        p1.yaxis[1].axis_label_text_color = hcol
+        p1.yaxis[1].minor_tick_line_color = hcol
+        p1.yaxis[1].major_tick_line_color = hcol
+        p1.yaxis[1].axis_line_color = hcol
+
     # precipitation (3 h sums)
     if 'rrsum' in df.columns:
         if df['rrsum'].sum() > 0: #axis would disappear when there was no rain measured
@@ -319,11 +323,11 @@ def upper_plot(df):
 
         timeoffset = 0 # timeoffset: dodge to correctly bin bar in time
         if rrsum_period > 10: timeoffset = -60*rrsum_period/2*1000
-        p1.vbar(x=dodge('time', timeoffset, range=p1.x_range), top='rrsum', width=get_width()*rrsum_period/10, source=df,
+        rr = p1.vbar(x=dodge('time', timeoffset, range=p1.x_range), top='rrsum', width=get_width()*rrsum_period/10, source=df,
                      fill_color=pcol, line_alpha=0,
                      line_width=0, fill_alpha=0.5,
                      legend = 'Precipitation',  y_range_name='rrsum')
-
+        rr.level='underlay'
         if rrsum_period >= 60:
             rr_period = str(round_dec(rrsum_period/60, decimals=1)) + ' h'
         else:
