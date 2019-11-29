@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+import math
 
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d, WheelZoomTool, SingleIntervalTicker, ZoomInTool, ZoomOutTool
@@ -8,6 +9,8 @@ from bokeh.models import HoverTool, DatetimeTickFormatter, WMTSTileSource
 from bokeh.layouts import layout, column
 from bokeh.io import output_file, save
 from bokeh.models.widgets import Panel, Tabs, Div
+from bokeh.transform import dodge
+
 
 
 #### Setup
@@ -29,6 +32,8 @@ socol = 'orange'
 
 # plot sunshine duration cumulated (ssdcum = True) or as 10 min values
 ssdcum = False
+# period to sum up precipitation in minutes (minimum 10)
+rrsum_period = 60*3
 
 nice_col_names = {
     'dd' : 'Wind direction (°)',
@@ -92,7 +97,7 @@ def get_width():
     '''
     mindate = min(df.index)
     maxdate = max(df.index)
-    return 0.9 * (maxdate-mindate).total_seconds()*1000 / len(df.index)
+    return 0.95 * (maxdate-mindate).total_seconds()*1000 / len(df.index)
 
 def merc(lat, lon):
     """
@@ -104,6 +109,10 @@ def merc(lat, lon):
     y = 180.0/np.pi * np.log(np.tan(np.pi/4.0 +
         lat * (np.pi/180.0)/2.0)) * scale
     return (x, y)
+
+def round_dec(n, decimals=0):
+    multiplier = 10 ** decimals
+    return math.floor(n * multiplier) / multiplier
 
 def read_data(url):
     '''
@@ -121,13 +130,12 @@ def read_data(url):
 
     # calculate 3h rainsum and cumulated rain/ sunshine duration
     if 'rr' in df.columns:
+        rrsum_rule = str(rrsum_period)+'min'
         df[df['rr'] < 0] = np.nan # missing value = -599.4000000000001???
         df['rm'] = df['rr'] / 6 # calculate rainsum out of rainrate
-        rr_cumday = df.groupby(pd.Grouper(freq='D'))
-        df['rr_cum'] = rr_cumday['rm'].cumsum()
-        df['rr3h'] = df['rm'].resample(rule='3H', base=0, loffset = '90min').sum()
-        df['rr3hm'] = df['rm'].resample(rule='3H', base=0).sum().resample('10min').fillna('pad') # for hover
-        del rr_cumday
+        df['rr_cum'] = df['rm'].groupby(pd.Grouper(freq='D')).cumsum()
+        df['rrsum'] = df['rm'].groupby(pd.Grouper(freq=rrsum_rule, label='right', closed = 'right')).sum()
+        df['rrsumm'] = df['rrsum'].fillna(method='bfill')  # fill up for hover
     if 'so' in df.columns:
         df[df['so'] < 0] = np.nan
         ssd_cumday = df.groupby(pd.Grouper(freq='D'))
@@ -241,6 +249,35 @@ def upper_plot(df):
     hover_p1.tooltips = [("Timestamp", "@time{%d %b %Y %H:%M} UTC"),
                          ('Temperature', "@tl{f0.0} °C")]#
 
+    # temperature
+    h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
+    p1.yaxis[0].axis_label = 'Temperature (°C)'
+    p1.yaxis[0].major_label_text_color = tcol
+    p1.yaxis[0].axis_label_text_color = tcol
+    p1.yaxis[0].minor_tick_line_color = tcol
+    p1.yaxis[0].major_tick_line_color = tcol
+    p1.yaxis[0].axis_line_color = tcol
+    p1.yaxis[0].axis_label_text_font_style = "normal"
+
+    # dew point
+    if 'tp' in df.columns:
+        p1.y_range=Range1d(df['tp'].min()-2, df['tl'].max()+2)
+        p1.line(x='time', y='tp', source=df, line_width=4, color=hcol, legend = 'Dewpoint')
+        hover_p1[0].tooltips.append(('Dewpoint', '@tp{f0.0} °C'))
+    else:
+        # relative humidity
+        p1.y_range=Range1d(df['tl'].min()-2, df['tl'].max()+2)
+        p1.extra_y_ranges = {'rf': Range1d(start=0, end=100)}
+        p1.add_layout(LinearAxis(y_range_name='rf'), 'right')
+        p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'Relative Humidity', y_range_name='rf')
+        p1.yaxis[1].axis_label = 'Relative humidity (%)'
+        p1.yaxis[1].major_label_text_color = hcol
+        p1.yaxis[1].axis_label_text_color = hcol
+        p1.yaxis[1].minor_tick_line_color = hcol
+        p1.yaxis[1].major_tick_line_color = hcol
+        p1.yaxis[1].axis_line_color = hcol
+        hover_p1[0].tooltips.append(('Relative Humidity', '@rf{f0.0} %'))
+
     # sunshine duration
     if 'so' in df.columns:
         if ssdcum:
@@ -272,48 +309,28 @@ def upper_plot(df):
         hover_p1[0].tooltips.append(('Sunshine duration', '@so{int} min per 10 min'))
         hover_p1[0].tooltips.append(('Cumulated sunshine duration', '@ssd_cum{f0.0} h'))
 
-    # temperature
-    h_line = p1.line(x='time', y='tl', source=df, line_width=4, color=tcol, legend='Temperature');
-    p1.yaxis[0].axis_label = 'Temperature (°C)'
-    p1.yaxis[0].major_label_text_color = tcol
-    p1.yaxis[0].axis_label_text_color = tcol
-    p1.yaxis[0].minor_tick_line_color = tcol
-    p1.yaxis[0].major_tick_line_color = tcol
-    p1.yaxis[0].axis_line_color = tcol
-    p1.yaxis[0].axis_label_text_font_style = "normal"
-
-    # dew point
-    if 'tp' in df.columns:
-        p1.y_range=Range1d(df['tp'].min()-2, df['tl'].max()+2)
-        p1.line(x='time', y='tp', source=df, line_width=4, color=hcol, legend = 'Dewpoint')
-        hover_p1[0].tooltips.append(('Dewpoint', '@tp{f0.0} °C'))
-    else:
-        # relative humidity
-        p1.y_range=Range1d(df['tl'].min()-2, df['tl'].max()+2)
-        p1.extra_y_ranges = {'rf': Range1d(start=0, end=100)}
-        p1.add_layout(LinearAxis(y_range_name='rf'), 'right')
-        p1.line(x='time', y='rf', source=df, line_width=4, color=hcol, legend = 'Relative Humidity', y_range_name='rf')
-        p1.yaxis[1].axis_label = 'Relative humidity (%)'
-        p1.yaxis[1].major_label_text_color = hcol
-        p1.yaxis[1].axis_label_text_color = hcol
-        p1.yaxis[1].minor_tick_line_color = hcol
-        p1.yaxis[1].major_tick_line_color = hcol
-        p1.yaxis[1].axis_line_color = hcol
-        hover_p1[0].tooltips.append(('Relative Humidity', '@rf{f0.0} %'))
-
     # precipitation (3 h sums)
-    if 'rr3h' in df.columns:
-        if df['rr3h'].sum() > 0: #axis would disappear when there was no rain measured
-            p1.extra_y_ranges['rr3h'] = Range1d(start=0, end=(df['rr_cum'].max() + df['rr_cum'].max()*0.1))
+    if 'rrsum' in df.columns:
+        if df['rrsum'].sum() > 0: #axis would disappear when there was no rain measured
+            p1.extra_y_ranges['rrsum'] = Range1d(start=0, end=(df['rrsum'].max()*2))
         else:
-            p1.extra_y_ranges['rr3h'] = Range1d(start=0, end=10)
-        p1.add_layout(LinearAxis(y_range_name='rr3h'), 'right')
-        p1.vbar(top='rr3h', x='time', source=df, width=get_width()*6*3,
+            p1.extra_y_ranges['rrsum'] = Range1d(start=0, end=10)
+        p1.add_layout(LinearAxis(y_range_name='rrsum'), 'right')
+
+        timeoffset = 0 # timeoffset: dodge to correctly bin bar in time
+        if rrsum_period > 10: timeoffset = -60*rrsum_period/2*1000
+        p1.vbar(x=dodge('time', timeoffset, range=p1.x_range), top='rrsum', width=get_width()*rrsum_period/10, source=df,
                      fill_color=pcol, line_alpha=0,
                      line_width=0, fill_alpha=0.5,
-                     legend = 'Precipitation',  y_range_name='rr3h')
+                     legend = 'Precipitation',  y_range_name='rrsum')
 
-        hover_p1[0].tooltips.append(('Precipitation', '@rr3hm{f0.0} mm in 3 h'))
+        if rrsum_period >= 60:
+            rr_period = str(round_dec(rrsum_period/60, decimals=1)) + ' h'
+        else:
+            rr_period = str(rrsum_period)+' min'
+        hover_p1[0].tooltips.append(('Precipitation', '@rrsumm{f0.0} mm in '+rr_period))
+        hover_p1[0].tooltips.append(('Cumulated precipitation', '@rr_cum{f0.0} mm'))
+
         p1.yaxis[2].major_label_text_color = pcol
         p1.yaxis[2].axis_label_text_color = pcol
         p1.yaxis[2].minor_tick_line_color = pcol
@@ -337,7 +354,6 @@ def upper_plot(df):
     p1 = set_font_style_axis(p1)
 
     return p1
-
 
 ##### Plot 2
 def lower_plot(df, p1):
